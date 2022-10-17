@@ -1,12 +1,15 @@
+use anyhow::Result;
 use nom::{
 	branch::alt,
-	bytes::complete::tag,
-	character::complete::{line_ending, space1, tab},
-	combinator::{map, value},
+	bytes::complete::{tag, take_until},
+	character::complete::{alpha1, alphanumeric1, char, digit1, line_ending, space1, tab},
+	combinator::{map, map_res, recognize, value},
+	multi::{many0, many1, many_m_n},
+	sequence::{delimited, terminated, tuple},
 	IResult,
 };
 
-use super::tokens::token_type::{Keyword, Operator, Punctuation, TokenType};
+use super::tokens::token_type::{Keyword, Literal, Operator, Punctuation, TokenType};
 
 pub fn detect_punctuation(input: &[u8]) -> IResult<&[u8], Punctuation> {
 	let (tail, keyword) = alt((
@@ -69,11 +72,54 @@ pub fn detect_keyword(input: &[u8]) -> IResult<&[u8], Keyword> {
 	Ok((tail, kw))
 }
 
+pub fn decimal(input: &[u8]) -> IResult<&[u8], Literal> {
+	let (tail, token): _ = map_res(
+		recognize(tuple((
+			many_m_n(0, 1, char('-')),
+			many1(terminated(digit1, many0(char('_')))),
+			many_m_n(
+				0,
+				1,
+				tuple((char('.'), many1(terminated(digit1, many0(char('_')))))),
+			),
+		))),
+		|token: &[u8]| -> Result<f64> {
+			let n_str = token
+				.iter()
+				.copied()
+				.filter(|c| *c != b'_')
+				.collect::<Vec<_>>();
+			let n_str = std::str::from_utf8(&n_str[..])?;
+			let n = n_str.parse::<f64>()?;
+			Ok(n)
+		},
+	)(input)?;
+
+	Ok((tail, Literal::Number(token)))
+}
+
+pub fn string(input: &[u8]) -> IResult<&[u8], Literal> {
+	let (tail, token) = alt((
+		delimited(char('\''), take_until("'"), char('\'')),
+		delimited(char('"'), take_until("\""), char('"')),
+	))(input)?;
+	Ok((tail, Literal::String(token)))
+}
+
+pub fn identifier(input: &[u8]) -> IResult<&[u8], Literal> {
+	let (tail, token) = recognize(tuple((
+		many1(alt((alpha1, tag("_"), tag("$")))),
+		many0(alt((alphanumeric1, tag("_"), tag("$")))),
+	)))(input)?;
+	Ok((tail, Literal::Identifier(token)))
+}
+
 pub fn detect(input: &[u8]) -> IResult<&[u8], TokenType> {
 	let (tail, token) = alt((
 		map(detect_keyword, TokenType::Keyword),
 		map(detect_operator, TokenType::Operator),
 		map(detect_punctuation, TokenType::Punctuation),
+		map(alt((decimal, string, identifier)), TokenType::Literal),
 	))(input)?;
 	Ok((tail, token))
 }

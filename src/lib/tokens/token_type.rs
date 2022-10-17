@@ -1,9 +1,9 @@
 #[derive(Debug, Clone)]
-pub enum TokenType {
+pub enum TokenType<'t> {
 	Punctuation(Punctuation),
 	Operator(Operator),
 	Keyword(Keyword),
-	Literal(Literal),
+	Literal(Literal<'t>),
 }
 
 #[derive(Debug, Clone)]
@@ -77,8 +77,8 @@ pub enum Keyword {
 }
 
 #[derive(Debug, Clone)]
-pub enum Literal {
-	String,
-	Number,
-	Identifier,
+pub enum Literal<'l> {
+	String(&'l [u8]),
+	Number(f64),
+	Identifier(&'l [u8]),
 }
