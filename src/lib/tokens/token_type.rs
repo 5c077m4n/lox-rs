@@ -4,6 +4,7 @@ pub enum TokenType<'t> {
 	Operator(Operator),
 	Keyword(Keyword),
 	Literal(Literal<'t>),
+	Generic(String),
 }
 
 #[derive(Debug, Clone)]
