@@ -2,6 +2,7 @@ use std::fmt;
 
 use super::token_type::TokenType;
 
+#[derive(Debug)]
 pub struct Token<'t> {
 	token_type: TokenType<'t>,
 	lexme: &'t str,
