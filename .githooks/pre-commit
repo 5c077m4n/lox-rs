@@ -7,8 +7,7 @@
 
 		local file_ext="${file##*.}"
 		if [[ "$file_ext" == "rs" ]]; then
-			cargo +nightly fmt -- "$file"
-			git add "$file"
+			cargo +nightly fmt -- "$file" --check || exit 1
 		fi
 	done
 
