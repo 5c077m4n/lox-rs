@@ -1,4 +1,4 @@
-use super::super::lexer::tokens::token::Token;
+use super::{super::lexer::tokens::token::Token, visitor_fn::parenthesize};
 
 #[derive(Debug)]
 pub enum Literal {
@@ -6,6 +6,16 @@ pub enum Literal {
 	String(String),
 	Boolean(bool),
 	Null,
+}
+impl ToString for Literal {
+	fn to_string(&self) -> String {
+		match self {
+			Literal::Number(n) => n.to_string(),
+			Literal::String(s) => s.to_owned(),
+			Literal::Boolean(b) => b.to_string(),
+			Literal::Null => "null".to_string(),
+		}
+	}
 }
 
 #[derive(Debug)]
@@ -28,12 +38,7 @@ pub enum Expr<'e> {
 }
 
 impl<'a> Expr<'a> {
-	fn visit(&self) {
-		match self {
-			Expr::Binary { .. } => todo!(),
-			Expr::Grouping { .. } => todo!(),
-			Expr::Literal { .. } => todo!(),
-			Expr::Unary { .. } => todo!(),
-		}
+	fn dump(&self) {
+		println!("{}", parenthesize(self));
 	}
 }

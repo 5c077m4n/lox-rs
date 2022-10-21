@@ -20,6 +20,9 @@ impl<'t> Token<'t> {
 			column,
 		}
 	}
+	pub fn to_str(&self) -> &str {
+		self.lexme
+	}
 }
 impl<'t> fmt::Display for Token<'t> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
