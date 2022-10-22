@@ -7,7 +7,7 @@ pub enum TokenType<'t> {
 	Generic(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Punctuation {
 	BracketOpen,
 	BracketClose,
@@ -29,7 +29,7 @@ pub enum Punctuation {
 	Eof,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operator {
 	/// !
 	Not,
@@ -75,7 +75,7 @@ impl Operator {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Keyword {
 	And,
 	Or,
