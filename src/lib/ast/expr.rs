@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::{super::lexer::tokens::token_type::Operator, visitor_fn::parenthesize};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Literal {
 	Number(f64),
 	String(String),
@@ -20,25 +20,25 @@ impl fmt::Display for Literal {
 	}
 }
 
-#[derive(Debug)]
-pub enum Expr<'e> {
+#[derive(Debug, Clone)]
+pub enum Expr {
 	Binary {
-		left: &'e Expr<'e>,
+		left: Box<Expr>,
 		op: Operator,
-		right: &'e Expr<'e>,
+		right: Box<Expr>,
 	},
 	Grouping {
-		expr: &'e Expr<'e>,
+		expr: Box<Expr>,
 	},
 	Literal {
 		value: Literal,
 	},
 	Unary {
 		op: Operator,
-		right: &'e Expr<'e>,
+		right: Box<Expr>,
 	},
 }
-impl<'a> Expr<'a> {
+impl Expr {
 	fn dump(&self) {
 		println!("{}", parenthesize(self));
 	}

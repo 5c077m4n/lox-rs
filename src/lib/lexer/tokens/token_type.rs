@@ -4,6 +4,7 @@ pub enum TokenType<'t> {
 	Operator(Operator),
 	Keyword(Keyword),
 	Literal(Literal<'t>),
+	Identifier(&'t [u8]),
 	Generic(String),
 }
 
@@ -97,5 +98,6 @@ pub enum Keyword {
 pub enum Literal<'l> {
 	String(&'l [u8]),
 	Number(f64),
-	Identifier(&'l [u8]),
+	Boolean(bool),
+	Null,
 }

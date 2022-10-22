@@ -106,12 +106,12 @@ pub fn string(input: &[u8]) -> IResult<&[u8], Literal> {
 	Ok((tail, Literal::String(token)))
 }
 
-pub fn identifier(input: &[u8]) -> IResult<&[u8], Literal> {
+pub fn identifier(input: &[u8]) -> IResult<&[u8], &[u8]> {
 	let (tail, token) = recognize(tuple((
 		many1(alt((alpha1, tag("_"), tag("$")))),
 		many0(alt((alphanumeric1, tag("_"), tag("$")))),
 	)))(input)?;
-	Ok((tail, Literal::Identifier(token)))
+	Ok((tail, token))
 }
 
 pub fn detect(input: &[u8]) -> IResult<&[u8], TokenType> {
@@ -119,7 +119,8 @@ pub fn detect(input: &[u8]) -> IResult<&[u8], TokenType> {
 		map(detect_keyword, TokenType::Keyword),
 		map(detect_operator, TokenType::Operator),
 		map(detect_punctuation, TokenType::Punctuation),
-		map(alt((decimal, string, identifier)), TokenType::Literal),
+		map(alt((decimal, string)), TokenType::Literal),
+		map(identifier, TokenType::Identifier),
 		map(many1(anychar), |t| {
 			let t: String = t.iter().collect();
 			TokenType::Generic(t)
