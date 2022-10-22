@@ -73,7 +73,7 @@ pub fn detect_keyword(input: &[u8]) -> IResult<&[u8], Keyword> {
 }
 
 pub fn decimal(input: &[u8]) -> IResult<&[u8], Literal> {
-	let (tail, token): _ = map_res(
+	let (tail, token) = map_res(
 		recognize(tuple((
 			many_m_n(0, 1, char('-')),
 			many1(terminated(digit1, many0(char('_')))),

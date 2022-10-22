@@ -56,6 +56,24 @@ pub enum Operator {
 	/// /
 	Div,
 }
+impl Operator {
+	pub fn to_str(&self) -> &str {
+		match self {
+			Self::Not => "!",
+			Self::NotEq => "!=",
+			Self::Eq => "=",
+			Self::EqEq => "==",
+			Self::Gt => ">",
+			Self::Gte => ">=",
+			Self::Lt => "<",
+			Self::Lte => "<=",
+			Self::Add => "+",
+			Self::Sub => "-",
+			Self::Mul => "*",
+			Self::Div => "/",
+		}
+	}
+}
 
 #[derive(Debug, Clone)]
 pub enum Keyword {

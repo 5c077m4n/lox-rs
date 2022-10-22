@@ -1,4 +1,4 @@
-use super::{super::lexer::tokens::token::Token, visitor_fn::parenthesize};
+use super::{super::lexer::tokens::token_type::Operator, visitor_fn::parenthesize};
 
 #[derive(Debug)]
 pub enum Literal {
@@ -22,7 +22,7 @@ impl ToString for Literal {
 pub enum Expr<'e> {
 	Binary {
 		left: &'e Expr<'e>,
-		op: Token<'e>,
+		op: Operator,
 		right: &'e Expr<'e>,
 	},
 	Grouping {
@@ -32,7 +32,7 @@ pub enum Expr<'e> {
 		value: Literal,
 	},
 	Unary {
-		op: Token<'e>,
+		op: Operator,
 		right: &'e Expr<'e>,
 	},
 }
