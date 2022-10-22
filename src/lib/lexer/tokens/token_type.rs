@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType<'t> {
 	Punctuation(Punctuation),
 	Operator(Operator),
@@ -23,10 +23,8 @@ pub enum Punctuation {
 	Comma,
 	Space,
 	Tab,
-	/// End of line
-	Eol,
-	/// End of file
-	Eof,
+	EndOfLine,
+	EndOfFile,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -95,7 +93,7 @@ pub enum Keyword {
 	Var,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Literal<'l> {
 	String(&'l [u8]),
 	Number(f64),
