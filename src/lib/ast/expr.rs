@@ -39,7 +39,7 @@ pub enum Expr {
 	},
 }
 impl Expr {
-	fn dump(&self) {
+	pub fn dump(&self) {
 		println!("{}", parenthesize(self));
 	}
 }
