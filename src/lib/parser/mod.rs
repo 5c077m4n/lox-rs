@@ -11,6 +11,7 @@ use super::{
 pub struct Parser<'p> {
 	tokens: &'p [Token<'p>],
 	index: usize,
+	errors: Vec<&'p str>,
 }
 impl<'p> Parser<'p> {
 	fn get_token_at(&self, rel: isize) -> Result<&TokenType> {
@@ -202,7 +203,10 @@ impl<'p> Parser<'p> {
 			self.match_type(&[&TokenType::Punctuation(Punctuation::BracketOpen)])
 		{
 			let expr = self.expression()?;
-			self.consume(&TokenType::Punctuation(Punctuation::BracketClose))?;
+			self.consume(
+				&TokenType::Punctuation(Punctuation::BracketClose),
+				"Expected a `)` after the expression",
+			)?;
 
 			Ok(Expr::Grouping {
 				expr: Box::new(expr),
@@ -211,9 +215,11 @@ impl<'p> Parser<'p> {
 			unreachable!()
 		}
 	}
-	fn consume(&mut self, until_token: &TokenType) -> Result<()> {
+	fn consume(&mut self, until_token: &TokenType, err_msg: &'p str) -> Result<()> {
 		if self.check(until_token)? {
 			self.advance()?;
+		} else {
+			self.errors.push(err_msg);
 		}
 		Ok(())
 	}
