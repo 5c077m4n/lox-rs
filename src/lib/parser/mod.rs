@@ -14,6 +14,13 @@ pub struct Parser<'p> {
 	errors: Vec<&'p str>,
 }
 impl<'p> Parser<'p> {
+	pub fn new(tokens: &'p [Token<'p>]) -> Self {
+		Parser {
+			tokens,
+			index: 0,
+			errors: Vec::new(),
+		}
+	}
 	fn get_token_at(&self, rel: isize) -> Result<&TokenType> {
 		let pos = (self.index as isize) + rel;
 		let pos: usize = pos.try_into()?;
@@ -222,5 +229,8 @@ impl<'p> Parser<'p> {
 			self.errors.push(err_msg);
 		}
 		Ok(())
+	}
+	pub fn parse(&mut self) -> Result<(Expr, &Vec<&'p str>)> {
+		self.expression().map(|expr| (expr, &self.errors))
 	}
 }
