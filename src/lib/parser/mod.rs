@@ -190,6 +190,7 @@ impl<'p> Parser<'p> {
 		}
 	}
 	fn primary(&mut self) -> Result<Expr> {
+		// TODO: fix this to only advance once
 		if let TokenType::Literal(lit) = self.peek()? {
 			let lit = match lit {
 				token_type::Literal::String(v) => Ok(Expr::Literal {
@@ -221,7 +222,8 @@ impl<'p> Parser<'p> {
 				expr: Box::new(expr),
 			})
 		} else {
-			unreachable!("Parser.primary")
+			self.errors.push("Expression expected here");
+			bail!("Expression expected here")
 		}
 	}
 	fn consume(&mut self, until_token: &TokenType, err_msg: &'p str) -> Result<()> {
