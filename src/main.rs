@@ -25,6 +25,8 @@ pub struct Args {
 }
 
 fn main() -> Result<()> {
+	env_logger::init();
+
 	let Args {
 		filepath,
 		eval,
