@@ -5,8 +5,9 @@ pub enum TokenType<'t> {
 	Keyword(Keyword),
 	Literal(Literal<'t>),
 	Identifier(&'t [u8]),
-	Generic(String),
-	Empty,
+	Generic(Vec<char>),
+	EndOfLine,
+	EndOfFile,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,8 +26,6 @@ pub enum Punctuation {
 	Comma,
 	Space,
 	Tab,
-	EndOfLine,
-	EndOfFile,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

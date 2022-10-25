@@ -1,4 +1,5 @@
 use anyhow::{anyhow, bail, Result};
+use log::debug;
 
 use super::{
 	ast::expr::{Expr, Literal},
@@ -33,7 +34,7 @@ impl<'p> Parser<'p> {
 		Ok(token)
 	}
 	fn is_at_end(&self) -> Result<bool> {
-		Ok(self.get_token_at(0)? == &TokenType::Punctuation(Punctuation::EndOfFile))
+		Ok(self.get_token_at(0)? == &TokenType::EndOfFile)
 	}
 	/// Advance the current index if not at the EOF yet
 	fn advance(&mut self) -> Result<()> {
@@ -44,6 +45,7 @@ impl<'p> Parser<'p> {
 	}
 	/// Get current token
 	fn peek(&self) -> Result<&TokenType> {
+		debug!("{:?}", self.tokens);
 		self.get_token_at(0)
 	}
 	/// Get previous token
@@ -219,7 +221,7 @@ impl<'p> Parser<'p> {
 				expr: Box::new(expr),
 			})
 		} else {
-			unreachable!()
+			unreachable!("Parser.primary")
 		}
 	}
 	fn consume(&mut self, until_token: &TokenType, err_msg: &'p str) -> Result<()> {
