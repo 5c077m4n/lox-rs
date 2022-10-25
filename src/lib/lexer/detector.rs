@@ -72,7 +72,12 @@ pub fn detect_keyword(input: &[u8]) -> IResult<&[u8], Keyword> {
 	Ok((tail, kw))
 }
 
-pub fn decimal(input: &[u8]) -> IResult<&[u8], Literal> {
+pub fn detect_empty(input: &[u8]) -> IResult<&[u8], TokenType> {
+	let (tail, kw) = value(TokenType::Empty, tag(b""))(input)?;
+	Ok((tail, kw))
+}
+
+pub fn detect_decimal(input: &[u8]) -> IResult<&[u8], Literal> {
 	let (tail, token) = map_res(
 		recognize(tuple((
 			many_m_n(0, 1, char('-')),
@@ -98,7 +103,7 @@ pub fn decimal(input: &[u8]) -> IResult<&[u8], Literal> {
 	Ok((tail, Literal::Number(token)))
 }
 
-pub fn string(input: &[u8]) -> IResult<&[u8], Literal> {
+pub fn detect_string(input: &[u8]) -> IResult<&[u8], Literal> {
 	let (tail, token) = alt((
 		delimited(char('\''), take_until("'"), char('\'')),
 		delimited(char('"'), take_until("\""), char('"')),
@@ -106,7 +111,7 @@ pub fn string(input: &[u8]) -> IResult<&[u8], Literal> {
 	Ok((tail, Literal::String(token)))
 }
 
-pub fn identifier(input: &[u8]) -> IResult<&[u8], &[u8]> {
+pub fn detect_identifier(input: &[u8]) -> IResult<&[u8], &[u8]> {
 	let (tail, token) = recognize(tuple((
 		many1(alt((alpha1, tag("_"), tag("$")))),
 		many0(alt((alphanumeric1, tag("_"), tag("$")))),
@@ -119,12 +124,13 @@ pub fn detect(input: &[u8]) -> IResult<&[u8], TokenType> {
 		map(detect_keyword, TokenType::Keyword),
 		map(detect_operator, TokenType::Operator),
 		map(detect_punctuation, TokenType::Punctuation),
-		map(alt((decimal, string)), TokenType::Literal),
-		map(identifier, TokenType::Identifier),
+		map(alt((detect_decimal, detect_string)), TokenType::Literal),
+		map(detect_identifier, TokenType::Identifier),
 		map(many1(anychar), |t| {
 			let t: String = t.iter().collect();
 			TokenType::Generic(t)
 		}),
+		detect_empty,
 	))(input)?;
 	Ok((tail, token))
 }
