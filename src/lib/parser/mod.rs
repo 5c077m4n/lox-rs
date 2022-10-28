@@ -259,3 +259,6 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		self.expression().map(|expr| (expr, &self.errors))
 	}
 }
+
+#[cfg(test)]
+mod tests;
