@@ -234,6 +234,28 @@ impl<'p> Parser<'p> {
 		}
 		Ok(())
 	}
+	fn sync(&mut self) -> Result<()> {
+		self.advance()?;
+
+		while !self.is_at_end() {
+			let prev = self.prev()?;
+			let current = self.current()?;
+
+			if prev != &TokenType::Punctuation(token_type::Punctuation::Semicolon)
+				&& current != &TokenType::Keyword(token_type::Keyword::Class)
+				&& current != &TokenType::Keyword(token_type::Keyword::Function)
+				&& current != &TokenType::Keyword(token_type::Keyword::Var)
+				&& current != &TokenType::Keyword(token_type::Keyword::For)
+				&& current != &TokenType::Keyword(token_type::Keyword::If)
+				&& current != &TokenType::Keyword(token_type::Keyword::While)
+				&& current != &TokenType::Keyword(token_type::Keyword::Print)
+				&& current != &TokenType::Keyword(token_type::Keyword::Return)
+			{
+				self.advance()?;
+			}
+		}
+		Ok(())
+	}
 	pub fn parse(&mut self) -> Result<(Expr, &Vec<&'p str>)> {
 		self.expression().map(|expr| (expr, &self.errors))
 	}
