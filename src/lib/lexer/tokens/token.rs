@@ -6,7 +6,6 @@ use super::token_type::TokenType;
 pub struct Token<'t> {
 	token_type: TokenType<'t>,
 	lexme: &'t str,
-	// literal: _,
 	line: usize,
 	column: usize,
 }

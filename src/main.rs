@@ -7,10 +7,7 @@ use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Result};
 use clap::{self, Parser};
-use lib::{
-	lexer::{scanner::scan, tokens::token::Token},
-	parser::Parser as ASTParser,
-};
+use lib::{lexer::scanner::scan, parser::Parser as ASTParser};
 
 #[derive(Parser, Debug)]
 #[clap(about, version, author)]
@@ -30,37 +27,33 @@ fn main() -> Result<()> {
 	let Args {
 		filepath,
 		eval,
-		check_only,
+		check_only: _,
 	} = Args::parse();
 
 	if let Some(filepath) = filepath {
 		let input = fs::read(&filepath)?;
-		let input: Vec<Token> = scan(&input).collect();
+		let input = scan(&input);
 
-		let mut parser = ASTParser::new(&input);
+		let mut parser = ASTParser::new(input);
 		let (tree, errors) = parser.parse()?;
 
 		if !errors.is_empty() {
 			bail!("{:?}", &errors);
 		}
 
-		if !check_only {
-			tree.dump();
-		}
+		tree.dump();
 	} else if let Some(input) = eval {
 		let input = input.as_str().as_bytes();
-		let input: Vec<Token> = scan(input).collect();
+		let input = scan(input);
 
-		let mut parser = ASTParser::new(&input);
+		let mut parser = ASTParser::new(input);
 		let (tree, errors) = parser.parse()?;
 
 		if !errors.is_empty() {
 			bail!("{:?}", &errors);
 		}
 
-		if !check_only {
-			tree.dump();
-		}
+		tree.dump();
 	}
 
 	Ok(())
