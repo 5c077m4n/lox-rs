@@ -86,7 +86,6 @@ pub enum Keyword {
 	Function,
 	For,
 	While,
-	Null,
 	Print,
 	Return,
 	Super,
