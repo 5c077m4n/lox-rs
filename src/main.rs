@@ -1,13 +1,13 @@
 #![allow(dead_code)]
 #![deny(clippy::all)]
 
-mod lib;
+mod rlox;
 
 use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Result};
 use clap::{self, Parser};
-use lib::{lexer::scanner::scan, parser::Parser as ASTParser};
+use rlox::{lexer::scanner::scan, parser::Parser as ASTParser};
 
 #[derive(Parser, Debug)]
 #[clap(about, version, author)]
