@@ -41,10 +41,12 @@ fn main() -> Result<()> {
 		if !errors.is_empty() {
 			bail!("{:?}", &errors);
 		}
-
 		if dump_ast {
 			tree.dump();
 		}
+
+		let result = tree.interpret()?;
+		println!("{:?}", &result);
 	} else if let Some(input) = eval {
 		let input = input.as_str().as_bytes();
 		let input = scan(input);
@@ -55,10 +57,12 @@ fn main() -> Result<()> {
 		if !errors.is_empty() {
 			bail!("{:?}", &errors);
 		}
-
 		if dump_ast {
 			tree.dump();
 		}
+
+		let result = tree.interpret()?;
+		println!("{:?}", &result);
 	}
 
 	Ok(())

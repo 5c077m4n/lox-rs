@@ -1,4 +1,4 @@
-use super::expr::Expr;
+use super::super::expr::Expr;
 
 pub fn parenthesize(expr: &Expr) -> String {
 	match expr {
