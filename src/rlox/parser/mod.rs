@@ -25,6 +25,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		parser.advance();
 		parser
 	}
+
 	fn get_token_at(&self, rel: usize) -> Result<&TokenType> {
 		let pos = self.history.len().saturating_sub(rel).saturating_sub(1);
 		let token = self
@@ -181,7 +182,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			}
 			other => {
 				// FIXME: A result should be retruned here to not break flow
-				bail!("Expression expected here, but got {:?}", &other)
+				bail!("Unknown primary expression received, but got {:?}", &other)
 			}
 		}
 	}
