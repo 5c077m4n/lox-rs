@@ -133,10 +133,10 @@ pub fn detect(input: &[u8]) -> IResult<&[u8], TokenType> {
 	let (tail, token) = alt((
 		map(detect_keyword, TokenType::Keyword),
 		map(detect_operator, TokenType::Operator),
-		map(detect_punctuation, TokenType::Punctuation),
 		map(detect_literal, TokenType::Literal),
 		detect_ends,
 		map(detect_identifier, TokenType::Identifier),
+		map(detect_punctuation, TokenType::Punctuation),
 		map(many1(anychar), TokenType::Generic),
 	))(input)?;
 	Ok((tail, token))
