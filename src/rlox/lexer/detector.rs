@@ -33,14 +33,14 @@ pub fn detect_punctuation(input: &[u8]) -> IResult<&[u8], Punctuation> {
 
 pub fn detect_operator(input: &[u8]) -> IResult<&[u8], Operator> {
 	let (tail, op) = alt((
-		value(Operator::Not, tag(b"!")),
 		value(Operator::NotEq, tag(b"!=")),
-		value(Operator::Eq, tag(b"=")),
 		value(Operator::EqEq, tag(b"==")),
-		value(Operator::Gt, tag(b">")),
 		value(Operator::Gte, tag(b">=")),
-		value(Operator::Lt, tag(b"<")),
 		value(Operator::Lte, tag(b"<=")),
+		value(Operator::Gt, tag(b">")),
+		value(Operator::Lt, tag(b"<")),
+		value(Operator::Eq, tag(b"=")),
+		value(Operator::Not, tag(b"!")),
 		value(Operator::Add, tag(b"+")),
 		value(Operator::Sub, tag(b"-")),
 		value(Operator::Mul, tag(b"*")),
