@@ -56,8 +56,6 @@ pub fn detect_keyword(input: &[u8]) -> IResult<&[u8], Keyword> {
 		value(Keyword::Class, tag(b"class")),
 		value(Keyword::If, tag(b"if")),
 		value(Keyword::Else, tag(b"else")),
-		value(Keyword::True, tag(b"true")),
-		value(Keyword::False, tag(b"false")),
 		value(Keyword::Function, tag(b"fn")),
 		value(Keyword::For, tag(b"for")),
 		value(Keyword::While, tag(b"while")),
@@ -108,6 +106,8 @@ pub fn detect_literal(input: &[u8]) -> IResult<&[u8], Literal> {
 	let (tail, token) = alt((
 		map(detect_decimal, Literal::Number),
 		map(detect_string, Literal::String),
+		value(Literal::Boolean(true), tag("true")),
+		value(Literal::Boolean(false), tag("false")),
 		value(Literal::Null, tag("null")),
 	))(input)?;
 	Ok((tail, token))
