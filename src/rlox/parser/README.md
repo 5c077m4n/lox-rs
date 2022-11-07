@@ -9,3 +9,8 @@
 | factor     | unary ( ( `/` \| `*` ) unary )\*                          |
 | unary      | ( `!` \| `-` \| `+` ) unary \| primary                    |
 | primary    | NUMBER \| STRING \| BOOLEAN \| NULL \| `(` expression `)` |
+| ---------- | --------------------------------------------------------- |
+| program    | ( statement )\* EOF                                       |
+| statement  | exprStmt \| printStmt                                     |
+| exprStmt   | expression `;`                                            |
+| printStmt  | `print` expression `;`                                    |
