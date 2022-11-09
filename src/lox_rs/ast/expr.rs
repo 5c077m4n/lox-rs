@@ -4,7 +4,10 @@ use anyhow::Result;
 
 use super::{
 	super::lexer::tokens::token_type::Operator,
-	visitors::{interp::interp, parens::parenthesize},
+	visitors::{
+		interp::{interpret_expr, interpret_stmt},
+		parens::parenthesize,
+	},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -33,10 +36,23 @@ pub enum Expr {
 	Unary(Operator, Box<Expr>),
 }
 impl Expr {
-	pub fn dump(&self) {
-		println!("{}", parenthesize(self));
-	}
 	pub fn interpret(&self) -> Result<Literal> {
-		interp(self)
+		interpret_expr(self)
+	}
+}
+impl fmt::Display for Expr {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{}", &parenthesize(self))
+	}
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Stmt {
+	Expression(Expr),
+	Print(Expr),
+}
+impl Stmt {
+	pub fn interpret(&self) -> Result<Literal> {
+		interpret_stmt(self)
 	}
 }
