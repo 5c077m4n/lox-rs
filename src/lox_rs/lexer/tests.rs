@@ -15,7 +15,7 @@ fn sanity() -> Result<()> {
 
 	assert_eq!(
 		input,
-		vec![Token::new(TokenType::Literal(Literal::Null), "", 0, 0)]
+		vec![Token::new(TokenType::Literal(Literal::Null), 0, 0)]
 	);
 	Ok(())
 }
@@ -28,9 +28,9 @@ fn one_plus_one() -> Result<()> {
 	assert_eq!(
 		input,
 		vec![
-			Token::new(TokenType::Literal(Literal::Number(1.)), "", 0, 0),
-			Token::new(TokenType::Operator(Operator::Add), "", 0, 0),
-			Token::new(TokenType::Literal(Literal::Number(1.)), "", 0, 0),
+			Token::new(TokenType::Literal(Literal::Number(1.)), 0, 0),
+			Token::new(TokenType::Operator(Operator::Add), 0, 0),
+			Token::new(TokenType::Literal(Literal::Number(1.)), 0, 0),
 		]
 	);
 	Ok(())
