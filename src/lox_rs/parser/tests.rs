@@ -2,7 +2,10 @@ use anyhow::Result;
 
 use super::{
 	super::{
-		ast::expr::{Expr, Literal, Stmt},
+		ast::{
+			expr::{Expr, Literal},
+			stmt::Stmt,
+		},
 		lexer::{scanner::scan, tokens::token_type::Operator},
 	},
 	Parser,

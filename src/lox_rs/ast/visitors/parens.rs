@@ -16,5 +16,6 @@ pub fn parenthesize(expr: &Expr) -> String {
 			let right_str = &parenthesize(right);
 			format!("({} {})", op.to_str(), right_str)
 		}
+		Expr::Variable(name) => format!("(var {})", name),
 	}
 }

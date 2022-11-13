@@ -43,7 +43,7 @@ fn main() -> Result<()> {
 		}
 
 		for stmt in tree {
-			let _result = stmt.interpret()?;
+			stmt.interpret()?;
 		}
 	} else if let Some(input) = eval {
 		let input = input.as_str().as_bytes();
@@ -57,7 +57,7 @@ fn main() -> Result<()> {
 		}
 
 		for stmt in tree {
-			let _result = stmt.interpret()?;
+			stmt.interpret()?;
 		}
 	}
 
