@@ -17,7 +17,7 @@ pub struct Interperter<'i> {
 	env: Env<'i>,
 }
 impl<'i> Interperter<'i> {
-	pub fn expr(&self, expr: Expr) -> Result<Literal> {
+	pub fn expr(&mut self, expr: Expr) -> Result<Literal> {
 		match expr {
 			Expr::Binary(left, op, right) => {
 				let left = self.expr(*left)?;
@@ -158,6 +158,12 @@ impl<'i> Interperter<'i> {
 				Ok(new_lit)
 			}
 			Expr::Variable(name) => self.env.get(name).cloned(),
+			Expr::Assign(name, value) => {
+				let value = self.expr(*value)?;
+				self.env.define(name, value);
+
+				Ok(Literal::Null)
+			}
 		}
 	}
 	pub fn stmt(&mut self, stmt: Stmt) -> Result<Literal> {
