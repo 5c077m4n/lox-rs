@@ -153,20 +153,22 @@ impl Interperter {
 						}
 						Literal::Null => Literal::Boolean(true),
 					},
-					other => unreachable!("Should not get {:?} as an unary op", &other),
+					other => bail!("Should not get {:?} as an unary operator", &other),
 				};
 				Ok(new_lit)
 			}
 			Expr::Variable(name) => self.env.get(name).cloned(),
 			Expr::Assign(name, value) => {
 				let value = self.expr(*value)?;
-				self.env.define(name, value);
+				self.env.redefine(name, value)?;
 
 				Ok(Literal::Null)
 			}
 		}
 	}
 	pub fn stmt(&mut self, stmt: Stmt) -> Result<Literal> {
+		log::debug!("{:?}", &self.env);
+
 		match stmt {
 			Stmt::Expression(e) => self.expr(e),
 			Stmt::Print(e) => {
@@ -182,8 +184,20 @@ impl Interperter {
 
 					Ok(value)
 				} else {
+					self.env.define(name, Literal::Null);
 					Ok(Literal::Null)
 				}
+			}
+			Stmt::Block(statements) => {
+				let prev_env = self.env.clone();
+				self.env = Env::new(Box::new(prev_env));
+
+				for statement in statements {
+					self.stmt(statement)?;
+				}
+				self.env = *self.env.get_parent().unwrap();
+
+				Ok(Literal::Null)
 			}
 		}
 	}
