@@ -1,19 +1,39 @@
-use std::{collections::BTreeMap, marker::PhantomData};
+use std::collections::{btree_map::Entry, BTreeMap};
 
-use anyhow::{anyhow, Result};
+use anyhow::{bail, Result};
 
 use super::ast::expr::Literal;
 
 #[derive(Default, Debug)]
-pub struct Env<'e>(BTreeMap<String, Literal>, PhantomData<&'e ()>);
-
-impl Env<'_> {
+pub struct Env {
+	values: BTreeMap<String, Literal>,
+	parent: Option<Box<Env>>,
+}
+impl Env {
+	pub fn add_parent(&mut self, parent: Env) {
+		let parent = Box::new(parent);
+		self.parent = Some(parent);
+	}
 	pub fn get(&self, name: String) -> Result<&Literal> {
-		self.0
-			.get(&name)
-			.ok_or_else(|| anyhow!("Undefined variable `{}`", name))
+		if let Some(value) = self.values.get(&name) {
+			Ok(value)
+		} else if let Some(parent_env) = &self.parent {
+			parent_env.get(name)
+		} else {
+			bail!("Undefined variable `{}`", name);
+		}
 	}
 	pub fn define(&mut self, name: String, value: Literal) {
-		self.0.insert(name, value);
+		self.values.insert(name, value);
+	}
+	pub fn redefine(&mut self, name: String, value: Literal) -> Result<()> {
+		if let Entry::Occupied(mut e) = self.values.entry(name.clone()) {
+			e.insert(value);
+			Ok(())
+		} else if let Some(parent_env) = &mut self.parent {
+			parent_env.redefine(name, value)
+		} else {
+			bail!("{} was not initiated yet", &name);
+		}
 	}
 }
