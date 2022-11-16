@@ -14,6 +14,16 @@ pub enum Literal {
 	Boolean(bool),
 	Null,
 }
+impl Literal {
+	pub fn is_truthy(&self) -> bool {
+		match self {
+			Self::Number(n) => *n != 0.,
+			Self::String(s) => !s.is_empty(),
+			Self::Boolean(b) => *b,
+			Self::Null => false,
+		}
+	}
+}
 impl fmt::Display for Literal {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {

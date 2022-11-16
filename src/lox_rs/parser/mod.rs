@@ -283,8 +283,36 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 		Ok(Stmt::Block(statments))
 	}
+	fn if_stmt(&mut self) -> Result<Stmt> {
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketOpen),
+			"Expected a `(` after `if`",
+		)?;
+		let condition = self.expression()?;
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketClose),
+			"Expected a `)` after the `if` condition",
+		)?;
+
+		let then_branch = self.statement()?;
+		let then_branch = Box::new(then_branch);
+
+		let else_branch = if self.current()? == &TokenType::Keyword(token_type::Keyword::If) {
+			self.advance();
+			let block = self.statement()?;
+			let block = Box::new(block);
+			Some(block)
+		} else {
+			None
+		};
+
+		Ok(Stmt::If(condition, then_branch, else_branch))
+	}
 	fn statement(&mut self) -> Result<Stmt> {
-		if self.current()? == &TokenType::Keyword(token_type::Keyword::Print) {
+		if self.current()? == &TokenType::Keyword(token_type::Keyword::If) {
+			self.advance();
+			self.if_stmt()
+		} else if self.current()? == &TokenType::Keyword(token_type::Keyword::Print) {
 			self.advance();
 			self.print_stmt()
 		} else if self.current()?
