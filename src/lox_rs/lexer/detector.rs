@@ -45,14 +45,14 @@ pub fn detect_operator(input: &[u8]) -> IResult<&[u8], Operator> {
 		value(Operator::Sub, tag(b"-")),
 		value(Operator::Mul, tag(b"*")),
 		value(Operator::Div, tag(b"/")),
+		value(Operator::And, tag(b"&&")),
+		value(Operator::Or, tag(b"||")),
 	))(input)?;
 	Ok((tail, op))
 }
 
 pub fn detect_keyword(input: &[u8]) -> IResult<&[u8], Keyword> {
 	let (tail, kw) = alt((
-		value(Keyword::And, tag(b"and")),
-		value(Keyword::Or, tag(b"or")),
 		value(Keyword::Class, tag(b"class")),
 		value(Keyword::If, tag(b"if")),
 		value(Keyword::Else, tag(b"else")),
