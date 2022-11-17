@@ -134,6 +134,16 @@ impl Interperter {
 
 				Ok(Literal::Null)
 			}
+			Expr::Logical(lhs, op, rhs) => {
+				let lhs = self.expr(*lhs)?;
+				match (op, lhs.is_truthy()) {
+					(Operator::Or, true) => Ok(lhs),
+					(Operator::Or, false) => self.expr(*rhs),
+					(Operator::And, true) => self.expr(*rhs),
+					(Operator::And, false) => Ok(lhs),
+					(other, _) => bail!("Invalid logical operator recieved {:?}", other),
+				}
+			}
 		}
 	}
 	pub fn stmt(&mut self, stmt: Stmt) -> Result<Literal> {

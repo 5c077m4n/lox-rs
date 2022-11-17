@@ -43,6 +43,7 @@ pub enum Expr {
 	Literal(Literal),
 	Unary(Operator, Box<Expr>),
 	Variable(String),
+	Logical(Box<Expr>, Operator, Box<Expr>),
 }
 impl Expr {
 	pub fn interpret(self) -> Result<Literal> {
