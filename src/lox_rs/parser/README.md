@@ -21,7 +21,8 @@
 | ----------- | ------------------------------------------------------- |
 | program     | ( statement )\* EOF                                     |
 | declaration | varDecl \| statement                                    |
-| statement   | exprStmt \| printStmt \| ifStmt \| block                |
+| statement   | exprStmt \| printStmt \| ifStmt \| block \| whileStmt   |
+| whileStmt   | `while` `(` expression `)` statment                     |
 | block       | `{` ( declaration )\* `}`                               |
 | exprStmt    | expression `;`                                          |
 | printStmt   | `print` expression `;`                                  |
