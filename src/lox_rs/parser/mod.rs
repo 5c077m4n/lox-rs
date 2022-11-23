@@ -350,6 +350,52 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 		Ok(Stmt::While(condition, Box::new(body)))
 	}
+	fn for_stmt(&mut self) -> Result<Stmt> {
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketOpen),
+			"Expected a `(` before the `for` condition",
+		)?;
+		let initializer: Option<Box<Stmt>> =
+			if self.current()? == &TokenType::Punctuation(token_type::Punctuation::Semicolon) {
+				self.advance();
+				None
+			} else if self.current()? == &TokenType::Keyword(token_type::Keyword::Var) {
+				self.advance();
+				let var_decl = self.var_declaration()?;
+				let var_decl = Box::new(var_decl);
+				Some(var_decl)
+			} else {
+				let expr_stmt = self.expr_stmt()?;
+				let expr_stmt = Box::new(expr_stmt);
+				Some(expr_stmt)
+			};
+		let condition: Option<Expr> =
+			if self.current()? != &TokenType::Punctuation(token_type::Punctuation::Semicolon) {
+				let expr = self.expression()?;
+				Some(expr)
+			} else {
+				None
+			};
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::Semicolon),
+			"Expected a `;` after the `for`'s condition expression",
+		)?;
+		let increment =
+			if self.current()? != &TokenType::Punctuation(token_type::Punctuation::BracketClose) {
+				let expr = self.expression()?;
+				Some(expr)
+			} else {
+				None
+			};
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketClose),
+			"Expected a `)` after the `for` clause",
+		)?;
+		let body = self.statement()?;
+		let body = Box::new(body);
+
+		Ok(Stmt::For(initializer, condition, increment, body))
+	}
 	fn statement(&mut self) -> Result<Stmt> {
 		if self.current()? == &TokenType::Keyword(token_type::Keyword::If) {
 			self.advance();
@@ -360,6 +406,9 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		} else if self.current()? == &TokenType::Keyword(token_type::Keyword::While) {
 			self.advance();
 			self.while_stmt()
+		} else if self.current()? == &TokenType::Keyword(token_type::Keyword::For) {
+			self.advance();
+			self.for_stmt()
 		} else if self.current()?
 			== &TokenType::Punctuation(token_type::Punctuation::BracketCurlyOpen)
 		{
