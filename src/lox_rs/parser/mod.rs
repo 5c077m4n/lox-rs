@@ -223,6 +223,35 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		}
 		Ok(expr)
 	}
+	fn finish_call(&mut self, callee: Expr) -> Result<Expr> {
+		let mut args: Vec<Expr> = Vec::new();
+		if self.current()? != &TokenType::Punctuation(token_type::Punctuation::BracketClose) {
+			args.push(self.expression()?);
+			while self.current()? == &TokenType::Punctuation(token_type::Punctuation::Comma) {
+				self.advance();
+				args.push(self.expression()?);
+			}
+		}
+
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketClose),
+			"Expected a `)` after the argument list",
+		)?;
+		Ok(Expr::Call(
+			Box::new(callee),
+			token_type::Punctuation::BracketClose,
+			args,
+		))
+	}
+	fn call(&mut self) -> Result<Expr> {
+		let mut expr = self.primary()?;
+		while self.current()? == &TokenType::Punctuation(token_type::Punctuation::BracketOpen) {
+			self.advance();
+			expr = self.finish_call(expr)?;
+		}
+
+		Ok(expr)
+	}
 	fn unary(&mut self) -> Result<Expr> {
 		use token_type::Operator;
 
@@ -236,7 +265,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 			Ok(Expr::Unary(op, Box::new(right)))
 		} else {
-			self.primary()
+			self.call()
 		}
 	}
 	fn primary(&mut self) -> Result<Expr> {

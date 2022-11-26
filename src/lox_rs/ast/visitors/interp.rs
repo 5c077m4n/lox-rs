@@ -3,16 +3,19 @@ use std::sync::Mutex;
 use anyhow::{bail, Result};
 use once_cell::sync::Lazy;
 
-use super::super::super::{
-	ast::{
-		expr::{Expr, Literal},
-		stmt::Stmt,
+use super::super::{
+	super::{
+		ast::{
+			expr::{Expr, Literal},
+			stmt::Stmt,
+		},
+		env::Env,
+		lexer::tokens::token_type::Operator,
 	},
-	env::Env,
-	lexer::tokens::token_type::Operator,
+	callables::builtins::CLOCK,
 };
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Interperter {
 	env: Env,
 }
@@ -101,6 +104,7 @@ impl Interperter {
 						}
 						Literal::Boolean(b) => Literal::Number(if b { 1. } else { 0. }),
 						Literal::Null => Literal::Number(0.),
+						Literal::Function(_) => bail!("Can't add a function"),
 					},
 					Operator::Sub => match right {
 						Literal::Number(n) => Literal::Number(n * (-1.)),
@@ -116,12 +120,14 @@ impl Interperter {
 						}
 						Literal::Boolean(b) => Literal::Number(if b { -1. } else { 0. }),
 						Literal::Null => Literal::Number(0.),
+						Literal::Function(_) => bail!("Can't sub a function"),
 					},
 					Operator::Not => match right {
 						Literal::Number(n) => Literal::Boolean(n != 0.),
 						Literal::String(s) => Literal::Boolean(!s.is_empty()),
 						Literal::Boolean(b) => Literal::Boolean(!b),
 						Literal::Null => Literal::Boolean(true),
+						Literal::Function(_) => Literal::Boolean(false),
 					},
 					other => bail!("Should not get {:?} as an unary operator", &other),
 				};
@@ -142,6 +148,24 @@ impl Interperter {
 					(Operator::And, true) => self.expr(*rhs),
 					(Operator::And, false) => Ok(lhs),
 					(other, _) => bail!("Invalid logical operator recieved {:?}", other),
+				}
+			}
+			Expr::Call(callee, _paren, args) => {
+				let callee = self.expr(*callee)?;
+
+				let mut args_as_lit: Vec<Literal> = Vec::with_capacity(args.len());
+				for arg in args.iter() {
+					let arg = self.expr(arg.clone())?;
+					args_as_lit.push(arg);
+				}
+
+				if let Literal::Function(func) = &callee {
+					if func.arity < args_as_lit.len() {
+						bail!("Too many args into {:?}", &func);
+					}
+					func.call(args_as_lit)
+				} else {
+					bail!("Unexpected type for the callee, {:?}", &callee);
 				}
 			}
 		}
@@ -226,6 +250,18 @@ impl Interperter {
 
 				Ok(Literal::Null)
 			}
+		}
+	}
+}
+impl Default for Interperter {
+	fn default() -> Self {
+		let globals = {
+			let mut g = Env::default();
+			g.define("clock".to_owned(), Literal::Function(CLOCK));
+			Box::new(g)
+		};
+		Self {
+			env: Env::new(globals),
 		}
 	}
 }
