@@ -22,7 +22,10 @@
 | name        | value                                                                                     |
 | ----------- | ----------------------------------------------------------------------------------------- |
 | program     | ( statement )\* EOF                                                                       |
-| declaration | varDecl \| statement                                                                      |
+| declaration | fnDecl \| varDecl \| statement                                                            |
+| fnDecl      | `fn` function                                                                             |
+| function    | IDENTIFIER `(` parameters ? `)` block                                                     |
+| parameters  | INDTIFIER ( `,` IDENTIFIER )\*                                                            |
 | statement   | exprStmt \| printStmt \| ifStmt \| block \| whileStmt \| forStmt                          |
 | whileStmt   | `while` `(` expression `)` statment                                                       |
 | forStmt     | `for` `(` ( varDecl \| exprStmt \| `;` ) ( expression )? `;` ( expression )? `)` statment |

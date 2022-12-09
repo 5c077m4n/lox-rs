@@ -160,7 +160,7 @@ impl Interperter {
 				}
 
 				if let Literal::Function(func) = &callee {
-					if func.arity < args_as_lit.len() {
+					if func.arity() < args_as_lit.len() {
 						bail!("Too many args into {:?}", &func);
 					}
 					func.call(args_as_lit)
@@ -250,6 +250,7 @@ impl Interperter {
 
 				Ok(Literal::Null)
 			}
+			Stmt::Function(_name, _inputs, _block) => bail!("[TODO] Function statement"),
 		}
 	}
 }

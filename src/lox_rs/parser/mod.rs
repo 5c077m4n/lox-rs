@@ -68,7 +68,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		Ok(is_ok)
 	}
 	/// Match the current token against a given list and advance the index only if there is a match
-	fn match_type(&mut self, types: &'p [&TokenType]) -> Result<Option<&TokenType>> {
+	fn match_token(&mut self, types: &'p [&TokenType]) -> Result<Option<&TokenType>> {
 		for t in types {
 			if self.check(t)? {
 				self.advance();
@@ -301,7 +301,6 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 				Ok(Expr::Variable(ident))
 			}
 			other => {
-				// FIXME: A result should be retruned here to not break flow
 				bail!("Unknown primary expression received: {:?}", &other);
 			}
 		}
@@ -328,8 +327,9 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 		while !self.check(&TokenType::Punctuation(
 			token_type::Punctuation::BracketCurlyClose,
-		))? && !self.is_at_end()
-		{
+		))? {
+			self.advance();
+
 			let decl = self.declaration()?;
 			statments.push(decl);
 		}
@@ -337,6 +337,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			&TokenType::Punctuation(token_type::Punctuation::BracketCurlyClose),
 			"Expected here a `}` to close the block",
 		)?;
+		log::debug!("{:?}", statments);
 
 		Ok(Stmt::Block(statments))
 	}
@@ -385,10 +386,10 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			"Expected a `(` before the `for` condition",
 		)?;
 		let initializer: Option<Box<Stmt>> =
-			if self.current()? == &TokenType::Punctuation(token_type::Punctuation::Semicolon) {
+			if self.check(&TokenType::Punctuation(token_type::Punctuation::Semicolon))? {
 				self.advance();
 				None
-			} else if self.current()? == &TokenType::Keyword(token_type::Keyword::Var) {
+			} else if self.check(&TokenType::Keyword(token_type::Keyword::Var))? {
 				self.advance();
 				let var_decl = self.var_declaration()?;
 				let var_decl = Box::new(var_decl);
@@ -399,7 +400,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 				Some(expr_stmt)
 			};
 		let condition: Option<Expr> =
-			if self.current()? != &TokenType::Punctuation(token_type::Punctuation::Semicolon) {
+			if self.check(&TokenType::Punctuation(token_type::Punctuation::Semicolon))? {
 				let expr = self.expression()?;
 				Some(expr)
 			} else {
@@ -409,13 +410,14 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			&TokenType::Punctuation(token_type::Punctuation::Semicolon),
 			"Expected a `;` after the `for`'s condition expression",
 		)?;
-		let increment =
-			if self.current()? != &TokenType::Punctuation(token_type::Punctuation::BracketClose) {
-				let expr = self.expression()?;
-				Some(expr)
-			} else {
-				None
-			};
+		let increment = if self.check(&TokenType::Punctuation(
+			token_type::Punctuation::BracketClose,
+		))? {
+			let expr = self.expression()?;
+			Some(expr)
+		} else {
+			None
+		};
 		self.assert_next(
 			&TokenType::Punctuation(token_type::Punctuation::BracketClose),
 			"Expected a `)` after the `for` clause",
@@ -426,21 +428,21 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		Ok(Stmt::For(initializer, condition, increment, body))
 	}
 	fn statement(&mut self) -> Result<Stmt> {
-		if self.current()? == &TokenType::Keyword(token_type::Keyword::If) {
+		if self.check(&TokenType::Keyword(token_type::Keyword::If))? {
 			self.advance();
 			self.if_stmt()
-		} else if self.current()? == &TokenType::Keyword(token_type::Keyword::Print) {
+		} else if self.check(&TokenType::Keyword(token_type::Keyword::Print))? {
 			self.advance();
 			self.print_stmt()
-		} else if self.current()? == &TokenType::Keyword(token_type::Keyword::While) {
+		} else if self.check(&TokenType::Keyword(token_type::Keyword::While))? {
 			self.advance();
 			self.while_stmt()
-		} else if self.current()? == &TokenType::Keyword(token_type::Keyword::For) {
+		} else if self.check(&TokenType::Keyword(token_type::Keyword::For))? {
 			self.advance();
 			self.for_stmt()
-		} else if self.current()?
-			== &TokenType::Punctuation(token_type::Punctuation::BracketCurlyOpen)
-		{
+		} else if self.check(&TokenType::Punctuation(
+			token_type::Punctuation::BracketCurlyOpen,
+		))? {
 			self.advance();
 			self.block()
 		} else {
@@ -453,7 +455,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			self.advance();
 
 			let mut var_init: Option<Expr> = None;
-			if let &TokenType::Operator(token_type::Operator::Eq) = self.current()? {
+			if self.check(&TokenType::Operator(token_type::Operator::Eq))? {
 				self.advance();
 				var_init = Some(self.expression()?);
 			}
@@ -467,24 +469,77 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			bail!("Expected variable name here");
 		}
 	}
+	fn fn_declaration(&mut self) -> Result<Stmt> {
+		let &TokenType::Identifier(fn_name) = self.current()? else {
+			bail!("Expected here a function name");
+		};
+		let fn_name = String::from_utf8(fn_name.to_vec())?;
+
+		self.advance();
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketOpen),
+			"Expected a `(` after the function's name",
+		)?;
+
+		if !self.check(&TokenType::Punctuation(
+			token_type::Punctuation::BracketClose,
+		))? {
+			self.advance();
+
+			let mut params: Vec<Expr> = Vec::new();
+			loop {
+				if let &TokenType::Identifier(param_name) = self.current()? {
+					let param_name = String::from_utf8(param_name.to_vec())?;
+					self.advance();
+					params.push(Expr::Variable(param_name));
+				}
+				if !self.check(&TokenType::Punctuation(token_type::Punctuation::Comma))? {
+					break;
+				}
+				self.advance();
+			}
+
+			if self.check(&TokenType::Punctuation(
+				token_type::Punctuation::BracketCurlyOpen,
+			))? {
+				self.advance();
+
+				let block = self.block()?;
+				return Ok(Stmt::Function(fn_name, params, Box::new(block)));
+			} else {
+				bail!("Expected here a block's start");
+			}
+		}
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketClose),
+			"Expected a `)` after the parameter list",
+		)?;
+
+		let block = self.block()?;
+		Ok(Stmt::Function(fn_name, Vec::new(), Box::new(block)))
+	}
 	fn declaration(&mut self) -> Result<Stmt> {
-		let result = if self.current()? == &TokenType::Keyword(token_type::Keyword::Var) {
+		if self.check(&TokenType::Keyword(token_type::Keyword::Var))? {
 			self.advance();
 			self.var_declaration()
+		} else if self.check(&TokenType::Keyword(token_type::Keyword::Function))? {
+			self.advance();
+			self.fn_declaration()
 		} else {
 			self.statement()
-		};
-		if let Err(e) = &result {
-			self.errors.push(e.to_string());
-			self.sync()?;
 		}
-		result
 	}
 
 	pub fn parse(&mut self) -> Result<(Vec<Stmt>, &[String])> {
 		let mut statments = Vec::new();
 		while !self.is_at_end() {
-			statments.push(self.declaration()?);
+			match self.declaration() {
+				core::result::Result::Ok(stmt) => statments.push(stmt),
+				Err(e) => {
+					self.errors.push(e.to_string());
+					self.sync()?;
+				}
+			}
 		}
 
 		Ok((statments, &self.errors[..]))
