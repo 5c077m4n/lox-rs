@@ -16,7 +16,7 @@ use super::{
 pub struct Parser<'p, I: Iterator<Item = Token<'p>>> {
 	tokens: Box<Peekable<I>>,
 	history: Vec<Token<'p>>,
-	errors: Vec<&'p str>,
+	errors: Vec<String>,
 }
 impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	pub fn new(tokens: Box<Peekable<I>>) -> Self {
@@ -80,10 +80,10 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	fn assert_next(&mut self, expected: &TokenType, err_msg: &'p str) -> Result<()> {
 		if self.check(expected)? {
 			self.advance();
+			Ok(())
 		} else {
 			bail!("{}", err_msg);
 		}
-		Ok(())
 	}
 	fn sync(&mut self) -> Result<()> {
 		use token_type::{Keyword, Punctuation};
@@ -474,13 +474,14 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		} else {
 			self.statement()
 		};
-		if result.is_err() {
+		if let Err(e) = &result {
+			self.errors.push(e.to_string());
 			self.sync()?;
 		}
 		result
 	}
 
-	pub fn parse(&mut self) -> Result<(Vec<Stmt>, &[&'p str])> {
+	pub fn parse(&mut self) -> Result<(Vec<Stmt>, &[String])> {
 		let mut statments = Vec::new();
 		while !self.is_at_end() {
 			statments.push(self.declaration()?);
