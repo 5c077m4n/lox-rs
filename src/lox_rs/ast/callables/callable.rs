@@ -12,6 +12,17 @@ pub struct Callable {
 }
 
 impl Callable {
+	pub fn new(
+		arity: usize,
+		as_str: &'static str,
+		func: fn(Vec<Literal>) -> Result<Literal>,
+	) -> Self {
+		Self {
+			arity,
+			as_str,
+			func,
+		}
+	}
 	pub fn arity(&self) -> usize {
 		self.arity
 	}
