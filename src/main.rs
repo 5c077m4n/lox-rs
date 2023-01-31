@@ -48,7 +48,7 @@ fn main() -> Result<()> {
 			}
 			if !check_only {
 				if let Err(e) = stmt.interpret() {
-					eprintln!("{}", e);
+					eprintln!("{e}");
 				}
 			}
 		}
@@ -69,7 +69,7 @@ fn main() -> Result<()> {
 			}
 			if !check_only {
 				if let Err(e) = stmt.interpret() {
-					eprintln!("{}", e);
+					eprintln!("{e}");
 				}
 			}
 		}
