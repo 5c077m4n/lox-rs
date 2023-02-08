@@ -1,7 +1,4 @@
-use std::sync::Mutex;
-
 use anyhow::{bail, Result};
-use once_cell::sync::Lazy;
 
 use super::super::{
 	super::{
@@ -12,9 +9,8 @@ use super::super::{
 		env::Env,
 		lexer::tokens::token_type::Operator,
 	},
-	callables::builtins::CLOCK,
+	callables::{builtins::NOW, callable::Callable, custom_fn::CustomFn},
 };
-use crate::lox_rs::ast::callables::callable::Callable;
 
 #[derive(Debug)]
 pub struct Interperter {
@@ -106,7 +102,9 @@ impl Interperter {
 						}
 						Literal::Boolean(b) => Literal::Number(if b { 1. } else { 0. }),
 						Literal::Null => Literal::Number(0.),
-						Literal::Function(_) => bail!("Can't add a function"),
+						Literal::NativeFunction(_) | Literal::CustomFunction(_) => {
+							bail!("Can't add a function")
+						}
 					},
 					Operator::Sub => match right {
 						Literal::Number(n) => Literal::Number(n * (-1.)),
@@ -122,14 +120,18 @@ impl Interperter {
 						}
 						Literal::Boolean(b) => Literal::Number(if b { -1. } else { 0. }),
 						Literal::Null => Literal::Number(0.),
-						Literal::Function(_) => bail!("Can't sub a function"),
+						Literal::NativeFunction(_) | Literal::CustomFunction(_) => {
+							bail!("Can't sub a function")
+						}
 					},
 					Operator::Not => match right {
 						Literal::Number(n) => Literal::Boolean(n != 0.),
 						Literal::String(s) => Literal::Boolean(!s.is_empty()),
 						Literal::Boolean(b) => Literal::Boolean(!b),
 						Literal::Null => Literal::Boolean(true),
-						Literal::Function(_) => Literal::Boolean(false),
+						Literal::NativeFunction(_) | Literal::CustomFunction(_) => {
+							Literal::Boolean(false)
+						}
 					},
 					other => bail!("Should not get {:?} as an unary operator", &other),
 				};
@@ -161,10 +163,13 @@ impl Interperter {
 				let args_as_lit: Vec<Literal> =
 					args.iter().map(|a| self.expr(a.clone()).unwrap()).collect();
 
-				let Literal::Function(func) = &callee else {
+				if let Literal::NativeFunction(func) = &callee {
+					func.call(self, args_as_lit)
+				} else if let Literal::CustomFunction(func) = &callee {
+					func.call(self, args_as_lit)
+				} else {
 					bail!("Unexpected type for the callee, {:?}", &callee);
-				};
-				func.call(self, args_as_lit)
+				}
 			}
 		}
 	}
@@ -254,22 +259,20 @@ impl Interperter {
 				Ok(result)
 			}
 			Stmt::Function(name, inputs, block) => {
-				let inputs: Vec<_> = inputs.iter().map(|p| self.expr(p.clone())).collect();
-				let block = self.stmt(*block)?;
-
-				let fn_str = format!(
+				let inputs: Vec<_> = inputs
+					.iter()
+					.map(|p| self.expr(p.clone()).unwrap())
+					.collect();
+				let func_string = format!(
 					r"function {name}({inputs:?}) {{
-                        {block}
+                        {block:?}
                     }}"
 				);
 
 				self.local.define(
 					name,
-					Literal::Function(Callable::new(inputs.len(), fn_str, |_inputs| {
-						Ok(Literal::Null)
-					})),
+					Literal::CustomFunction(CustomFn::new(inputs, func_string)),
 				);
-
 				Ok(Literal::Null)
 			}
 		}
@@ -280,10 +283,7 @@ impl Default for Interperter {
 	fn default() -> Self {
 		let global = {
 			let mut g = Env::default();
-			g.define(
-				"clock".to_owned(),
-				Literal::Function(CLOCK.lock().unwrap().to_owned()),
-			);
+			g.define("now".to_owned(), Literal::NativeFunction(NOW));
 			g
 		};
 		Self {
@@ -292,5 +292,3 @@ impl Default for Interperter {
 		}
 	}
 }
-
-pub static INTERPERTER: Lazy<Mutex<Interperter>> = Lazy::new(|| Mutex::new(Interperter::default()));
