@@ -1,28 +1,54 @@
+use std::fmt;
+
 use anyhow::Result;
 
 use super::{
-	super::{super::ast::visitors::interp::Interperter, expr::Literal},
+	super::{
+		super::ast::{expr::Expr, stmt::Stmt, visitors::interp::Interperter},
+		expr::Literal,
+	},
 	callable::Callable,
 };
+use crate::lox_rs::env::Env;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CustomFn {
-	inputs: Vec<Literal>,
-	as_string: String,
+	name: String,
+	inputs: Vec<Expr>,
+	body: Box<Stmt>,
+}
+impl fmt::Display for CustomFn {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let Self { name, inputs, body } = self;
+		write!(
+			f,
+			"function {name}({inputs:?}) {{
+                {body:?}
+            }}",
+		)
+	}
 }
 impl Callable for CustomFn {
 	fn arity(&self) -> usize {
 		self.inputs.len()
 	}
-	fn call(&self, _interp: &Interperter, _args: Vec<Literal>) -> Result<Literal> {
-		Ok(Literal::Null)
+	fn call(&self, interp: &mut Interperter, args: Vec<Expr>) -> Result<Literal> {
+		let Self { name, inputs, body } = self;
+		let mut fn_env = Env::new(Box::new(interp.global.clone()));
+
+		for arg in args.iter() {
+			let arg = arg.clone();
+			let arg = interp.expr(arg)?;
+			fn_env.define(arg.to_string(), arg);
+		}
+		todo!()
 	}
 	fn to_string(&self) -> String {
-		self.as_string.to_owned()
+		format!("{self}")
 	}
 }
 impl CustomFn {
-	pub fn new(inputs: Vec<Literal>, as_string: String) -> Self {
-		Self { inputs, as_string }
+	pub fn new(name: String, inputs: Vec<Expr>, body: Box<Stmt>) -> Self {
+		Self { name, inputs, body }
 	}
 }

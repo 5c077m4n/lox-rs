@@ -160,13 +160,11 @@ impl Interperter {
 			}
 			Expr::Call(callee, _paren, args) => {
 				let callee = self.expr(*callee)?;
-				let args_as_lit: Vec<Literal> =
-					args.iter().map(|a| self.expr(a.clone()).unwrap()).collect();
 
 				if let Literal::NativeFunction(func) = &callee {
-					func.call(self, args_as_lit)
+					func.call(self, args)
 				} else if let Literal::CustomFunction(func) = &callee {
-					func.call(self, args_as_lit)
+					func.call(self, args)
 				} else {
 					bail!("Unexpected type for the callee, {:?}", &callee);
 				}
@@ -259,19 +257,9 @@ impl Interperter {
 				Ok(result)
 			}
 			Stmt::Function(name, inputs, block) => {
-				let inputs: Vec<_> = inputs
-					.iter()
-					.map(|p| self.expr(p.clone()).unwrap())
-					.collect();
-				let func_string = format!(
-					r"function {name}({inputs:?}) {{
-                        {block:?}
-                    }}"
-				);
-
 				self.local.define(
-					name,
-					Literal::CustomFunction(CustomFn::new(inputs, func_string)),
+					name.clone(),
+					Literal::CustomFunction(CustomFn::new(name, inputs, block)),
 				);
 				Ok(Literal::Null)
 			}

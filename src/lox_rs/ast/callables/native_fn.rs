@@ -1,7 +1,10 @@
 use anyhow::Result;
 
 use super::{
-	super::{super::ast::visitors::interp::Interperter, expr::Literal},
+	super::{
+		super::ast::visitors::interp::Interperter,
+		expr::{Expr, Literal},
+	},
 	callable::Callable,
 };
 
@@ -14,7 +17,11 @@ impl Callable for NativeFn {
 	fn arity(&self) -> usize {
 		self.arity
 	}
-	fn call(&self, _interp: &Interperter, args: Vec<Literal>) -> Result<Literal> {
+	fn call(&self, interp: &mut Interperter, args: Vec<Expr>) -> Result<Literal> {
+		let args: Vec<Literal> = args
+			.iter()
+			.map(|a| interp.expr(a.clone()).unwrap())
+			.collect();
 		(self.func)(args)
 	}
 	fn to_string(&self) -> String {
