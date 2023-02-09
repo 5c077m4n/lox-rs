@@ -265,6 +265,15 @@ impl Interperter {
 			}
 		}
 	}
+	pub fn exec_block(&mut self, block: &Stmt, env: Box<Env>) -> Result<Literal> {
+		let prev_env = self.local.clone();
+		self.local = Env::new(env);
+
+		let result = self.stmt(block.clone());
+		self.local = prev_env;
+
+		result
+	}
 }
 
 impl Default for Interperter {
