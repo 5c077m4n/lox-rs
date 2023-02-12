@@ -43,7 +43,7 @@ impl Callable for CustomFn {
 
 		for arg in args.iter() {
 			let arg_name = arg.to_string();
-			let arg = interp.expr(arg.clone())?;
+			let arg = interp.expr(arg)?;
 
 			fn_env.define(arg_name, arg);
 		}

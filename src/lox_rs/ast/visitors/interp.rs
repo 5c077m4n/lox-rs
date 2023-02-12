@@ -18,11 +18,11 @@ pub struct Interperter {
 	pub local: Env,
 }
 impl Interperter {
-	pub fn expr(&mut self, expr: Expr) -> Result<Literal> {
+	pub fn expr(&mut self, expr: &Expr) -> Result<Literal> {
 		match expr {
 			Expr::Binary(left, op, right) => {
-				let left = self.expr(*left)?;
-				let right = self.expr(*right)?;
+				let left = self.expr(left)?;
+				let right = self.expr(right)?;
 
 				let new_lit = match op {
 					Operator::NotEq => Literal::Boolean(left != right),
@@ -82,10 +82,10 @@ impl Interperter {
 				};
 				Ok(new_lit)
 			}
-			Expr::Grouping(expr) => self.expr(*expr),
-			Expr::Literal(lit) => Ok(lit),
+			Expr::Grouping(expr) => self.expr(expr),
+			Expr::Literal(lit) => Ok(lit.clone()),
 			Expr::Unary(op, right) => {
-				let right = self.expr(*right)?;
+				let right = self.expr(right)?;
 
 				let new_lit = match op {
 					Operator::Add => match right {
@@ -140,38 +140,38 @@ impl Interperter {
 			Expr::Variable(name) => self
 				.local
 				.get(name.clone())
-				.or_else(|_| self.global.get(name))
+				.or_else(|_| self.global.get(name.to_string()))
 				.cloned(),
 			Expr::Assign(name, value) => {
-				let value = self.expr(*value)?;
-				self.local.redefine(name, value.clone())?;
+				let value = self.expr(value)?;
+				self.local.redefine(name.to_string(), value.clone())?;
 
 				Ok(value)
 			}
 			Expr::Logical(lhs, op, rhs) => {
-				let lhs = self.expr(*lhs)?;
+				let lhs = self.expr(lhs)?;
 				match (op, lhs.is_truthy()) {
 					(Operator::Or, true) => Ok(lhs),
-					(Operator::Or, false) => self.expr(*rhs),
-					(Operator::And, true) => self.expr(*rhs),
+					(Operator::Or, false) => self.expr(rhs),
+					(Operator::And, true) => self.expr(rhs),
 					(Operator::And, false) => Ok(lhs),
 					(other, _) => bail!("Invalid logical operator recieved {:?}", other),
 				}
 			}
 			Expr::Call(callee, _paren, args) => {
-				let callee = self.expr(*callee)?;
+				let callee = self.expr(callee)?;
 
 				if let Literal::NativeFunction(func) = &callee {
-					func.call(self, args)
+					func.call(self, args.to_vec())
 				} else if let Literal::CustomFunction(func) = &callee {
-					func.call(self, args)
+					func.call(self, args.to_vec())
 				} else {
 					bail!("Unexpected type for the callee, {:?}", &callee);
 				}
 			}
 		}
 	}
-	pub fn stmt(&mut self, stmt: Stmt) -> Result<Literal> {
+	pub fn stmt(&mut self, stmt: &Stmt) -> Result<Literal> {
 		log::debug!("{:?}", &self.local);
 
 		match stmt {
@@ -185,11 +185,11 @@ impl Interperter {
 			Stmt::Var(name, value) => {
 				if let Some(value) = value {
 					let value = self.expr(value)?;
-					self.local.define(name, value.clone());
+					self.local.define(name.to_string(), value.clone());
 
 					Ok(value)
 				} else {
-					self.local.define(name, Literal::Null);
+					self.local.define(name.to_string(), Literal::Null);
 					Ok(Literal::Null)
 				}
 			}
@@ -208,25 +208,25 @@ impl Interperter {
 			Stmt::If(cond, then_block, else_block) => {
 				let mut result = Literal::Null;
 				if self.expr(cond)?.is_truthy() {
-					result = self.stmt(*then_block)?;
+					result = self.stmt(then_block)?;
 				} else if let Some(else_block) = else_block {
-					result = self.stmt(*else_block)?;
+					result = self.stmt(else_block)?;
 				}
 				Ok(result)
 			}
 			Stmt::While(cond, block) => {
 				let mut result = Literal::Null;
-				while self.expr(cond.clone())?.is_truthy() {
-					result = self.stmt(*block.clone())?;
+				while self.expr(cond)?.is_truthy() {
+					result = self.stmt(block)?;
 				}
 				Ok(result)
 			}
 			Stmt::For(initializer, condition, increment, block) => {
 				let mut init_param_name: Option<String> = None;
 				if let Some(initializer) = initializer {
-					if let Stmt::Var(ref name, _) = *initializer {
+					if let Stmt::Var(ref name, _) = **initializer {
 						init_param_name = Some(name.clone());
-						self.stmt(*initializer)?;
+						self.stmt(initializer)?;
 					} else {
 						bail!("This should be a loop interator initializer")
 					}
@@ -235,20 +235,20 @@ impl Interperter {
 				let block = Box::new(Stmt::Block({
 					let mut stmts: Vec<Stmt> = Vec::new();
 
-					stmts.push(*block);
+					stmts.push(*block.clone());
 					if let Some(increment) = increment {
-						stmts.push(Stmt::Expression(increment));
+						stmts.push(Stmt::Expression(increment.clone()));
 					}
 					stmts
 				}));
 				let mut result = Literal::Null;
 				while condition
 					.clone()
-					.map_or_else(|| Ok(Literal::Null), |expr| self.expr(expr))?
+					.map_or_else(|| Ok(Literal::Null), |expr| self.expr(&expr))?
 					.is_truthy()
 				{
 					let block = block.clone();
-					result = self.stmt(*block)?;
+					result = self.stmt(&block)?;
 				}
 				if let Some(init_param_name) = init_param_name {
 					self.local.remove(&init_param_name);
@@ -259,7 +259,11 @@ impl Interperter {
 			Stmt::Function(name, inputs, block) => {
 				self.local.define(
 					name.clone(),
-					Literal::CustomFunction(CustomFn::new(name, inputs, block)),
+					Literal::CustomFunction(CustomFn::new(
+						name.to_string(),
+						inputs.to_vec(),
+						block.clone(),
+					)),
 				);
 				Ok(Literal::Null)
 			}
@@ -269,7 +273,7 @@ impl Interperter {
 		let prev_env = self.local.clone();
 		self.local = Env::new(env);
 
-		let result = self.stmt(block.clone());
+		let result = self.stmt(block);
 		self.local = prev_env;
 
 		result

@@ -55,7 +55,7 @@ pub enum Expr {
 	Logical(Box<Expr>, Operator, Box<Expr>),
 }
 impl Expr {
-	pub fn interpret(self, interp: &mut Interperter) -> Result<Literal> {
+	pub fn interpret(&self, interp: &mut Interperter) -> Result<Literal> {
 		interp.expr(self)
 	}
 }
