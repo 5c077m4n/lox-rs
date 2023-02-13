@@ -1,6 +1,6 @@
 use std::fmt;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 
 use super::{
 	super::{
@@ -42,7 +42,10 @@ impl Callable for CustomFn {
 		let mut fn_env = Box::new(fn_env);
 
 		for arg in args.iter() {
-			let arg_name = arg.to_string();
+			let Expr::Variable(arg_name) = arg else {
+				bail!("Unexpected expression {:?}", &arg);
+ 			};
+			let arg_name = arg_name.to_string();
 			let arg = interp.expr(arg)?;
 
 			fn_env.define(arg_name, arg);
