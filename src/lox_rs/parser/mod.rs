@@ -327,8 +327,6 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		while !self.check(&TokenType::Punctuation(
 			token_type::Punctuation::BracketCurlyClose,
 		))? {
-			self.advance();
-
 			let decl = self.declaration()?;
 			statments.push(decl);
 		}

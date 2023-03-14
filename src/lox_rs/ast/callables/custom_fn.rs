@@ -34,21 +34,23 @@ impl Callable for CustomFn {
 	}
 	fn call(&self, interp: &mut Interperter, args: Vec<Expr>) -> Result<Literal> {
 		let Self {
-			name: _,
-			inputs: _,
+			name: _name,
+			inputs,
 			body,
 		} = self;
+
 		let fn_env = Env::new(Box::new(interp.global.clone()));
 		let mut fn_env = Box::new(fn_env);
 
-		for arg in args.iter() {
-			let Expr::Variable(arg_name) = arg else {
-				bail!("Unexpected expression {:?}", &arg);
+		for (index, input) in inputs.iter().enumerate() {
+			let Expr::Variable(input_name) = input else {
+				bail!("Unexpected expression {:?} (should of been a variable)", &input);
  			};
-			let arg_name = arg_name.to_string();
-			let arg = interp.expr(arg)?;
+			let input_name = input_name.to_string();
+			let input = args.get(index).unwrap_or(&Expr::Literal(Literal::Null));
+			let input = interp.expr(input)?;
 
-			fn_env.define(arg_name, arg);
+			fn_env.define(input_name, input);
 		}
 		interp.exec_block(body, fn_env)
 	}
