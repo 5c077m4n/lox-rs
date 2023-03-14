@@ -64,10 +64,9 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	}
 	/// Check if the current token is of a give type
 	fn check(&self, token: &TokenType) -> Result<bool> {
-		let is_ok = !self.is_at_end() && self.current()? == token;
-		Ok(is_ok)
+		Ok(!self.is_at_end() && self.current()? == token)
 	}
-	/// Match the current token against a given list and advance the index only if there is a match
+	/// Match the current token against a given list and advance the index (only if there is a match)
 	fn match_token(&mut self, types: &'p [&TokenType]) -> Result<Option<&TokenType>> {
 		for t in types {
 			if self.check(t)? {
@@ -337,7 +336,6 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			&TokenType::Punctuation(token_type::Punctuation::BracketCurlyClose),
 			"Expected here a `}` to close the block",
 		)?;
-		log::debug!("{:?}", statments);
 
 		Ok(Stmt::Block(statments))
 	}
@@ -484,8 +482,6 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		if !self.check(&TokenType::Punctuation(
 			token_type::Punctuation::BracketClose,
 		))? {
-			self.advance();
-
 			let mut params: Vec<Expr> = Vec::new();
 			loop {
 				if let &TokenType::Identifier(param_name) = self.current()? {
@@ -493,10 +489,12 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 					params.push(Expr::Variable(param_name));
 					self.advance();
 				}
-				if !self.check(&TokenType::Punctuation(token_type::Punctuation::Comma))? {
+
+				if self.check(&TokenType::Punctuation(token_type::Punctuation::Comma))? {
+					self.advance();
+				} else {
 					break;
 				}
-				self.advance();
 			}
 			self.assert_next(
 				&TokenType::Punctuation(token_type::Punctuation::BracketClose),

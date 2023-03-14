@@ -172,8 +172,6 @@ impl Interperter {
 		}
 	}
 	pub fn stmt(&mut self, stmt: &Stmt) -> Result<Literal> {
-		log::debug!("{:?}", &self.local);
-
 		match stmt {
 			Stmt::Expression(e) => self.expr(e),
 			Stmt::Print(e) => {

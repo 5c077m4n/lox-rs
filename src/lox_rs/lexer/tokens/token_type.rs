@@ -12,19 +12,33 @@ pub enum TokenType<'t> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Punctuation {
+	/// `(`
 	BracketOpen,
+	/// `)`
 	BracketClose,
+	/// `{`
 	BracketCurlyOpen,
+	/// `}`
 	BracketCurlyClose,
+	/// `'`
 	QuoteSingle,
+	/// `"`
 	QuoteDouble,
+	/// `;`
 	Semicolon,
+	/// `:`
 	Colon,
+	/// `|`
 	Pipe,
+	/// `&`
 	Ampersand,
+	/// `.`
 	Dot,
+	/// `,`
 	Comma,
+	/// ` `
 	Space,
+	/// `\t`
 	Tab,
 }
 
