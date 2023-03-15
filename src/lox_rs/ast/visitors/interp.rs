@@ -176,7 +176,7 @@ impl Interperter {
 			Stmt::Expression(e) => self.expr(e),
 			Stmt::Print(e) => {
 				let result = self.expr(e)?;
-				println!("{:?}", &result);
+				println!("{}", &result);
 
 				Ok(result)
 			}

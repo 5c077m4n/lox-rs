@@ -34,8 +34,8 @@ impl fmt::Display for Literal {
 			Literal::Number(n) => write!(f, "{n}"),
 			Literal::String(s) => write!(f, "\"{s}\""),
 			Literal::Boolean(b) => write!(f, "{b}"),
-			Literal::CustomFunction(func) => write!(f, "{func:?}"),
-			Literal::NativeFunction(func) => write!(f, "{func:?}"),
+			Literal::CustomFunction(func) => write!(f, "{func}"),
+			Literal::NativeFunction(func) => write!(f, "{func}"),
 			Literal::Null => write!(f, "null"),
 		}
 	}

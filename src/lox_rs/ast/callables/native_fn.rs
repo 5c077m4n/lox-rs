@@ -1,3 +1,5 @@
+use std::fmt;
+
 use anyhow::Result;
 
 use super::{
@@ -10,8 +12,15 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeFn {
+	name: &'static str,
 	arity: usize,
 	func: fn(Vec<Literal>) -> Result<Literal>,
+}
+impl fmt::Display for NativeFn {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let Self { name, .. } = self;
+		write!(f, "<native fn `{name}`>",)
+	}
 }
 impl Callable for NativeFn {
 	fn arity(&self) -> usize {
@@ -22,11 +31,15 @@ impl Callable for NativeFn {
 		(self.func)(args)
 	}
 	fn to_string(&self) -> String {
-		"<native fn>".to_string()
+		format!("{self}")
 	}
 }
 impl NativeFn {
-	pub const fn new(arity: usize, func: fn(Vec<Literal>) -> Result<Literal>) -> Self {
-		Self { arity, func }
+	pub const fn new(
+		name: &'static str,
+		arity: usize,
+		func: fn(Vec<Literal>) -> Result<Literal>,
+	) -> Self {
+		Self { name, arity, func }
 	}
 }
