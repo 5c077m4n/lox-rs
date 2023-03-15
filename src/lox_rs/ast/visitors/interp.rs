@@ -160,13 +160,12 @@ impl Interperter {
 			}
 			Expr::Call(callee, _paren, args) => {
 				let callee = self.expr(callee)?;
+				let args = args.to_vec();
 
-				if let Literal::NativeFunction(func) = &callee {
-					func.call(self, args.to_vec())
-				} else if let Literal::CustomFunction(func) = &callee {
-					func.call(self, args.to_vec())
-				} else {
-					bail!("Unexpected type for the callee, {:?}", &callee);
+				match &callee {
+					Literal::NativeFunction(func) => func.call(self, args),
+					Literal::CustomFunction(func) => func.call(self, args),
+					other => bail!("Unexpected type for the callee, {:?}", other),
 				}
 			}
 		}
@@ -265,6 +264,7 @@ impl Interperter {
 				);
 				Ok(Literal::Null)
 			}
+			Stmt::Return(value) => self.expr(value),
 		}
 	}
 	pub fn exec_block(&mut self, block: &Stmt, env: Box<Env>) -> Result<Literal> {

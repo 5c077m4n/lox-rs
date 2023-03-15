@@ -423,6 +423,18 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 		Ok(Stmt::For(initializer, condition, increment, body))
 	}
+	fn return_stmt(&mut self) -> Result<Stmt> {
+		let mut value = Expr::Literal(Literal::Null);
+
+		if !self.check(&TokenType::Punctuation(token_type::Punctuation::Semicolon))? {
+			value = self.expression()?;
+		}
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::Semicolon),
+			"Expected `;` after the return value",
+		)?;
+		Ok(Stmt::Return(value))
+	}
 	fn statement(&mut self) -> Result<Stmt> {
 		if self.check(&TokenType::Keyword(token_type::Keyword::If))? {
 			self.advance();
@@ -430,6 +442,9 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		} else if self.check(&TokenType::Keyword(token_type::Keyword::Print))? {
 			self.advance();
 			self.print_stmt()
+		} else if self.check(&TokenType::Keyword(token_type::Keyword::Return))? {
+			self.advance();
+			self.return_stmt()
 		} else if self.check(&TokenType::Keyword(token_type::Keyword::While))? {
 			self.advance();
 			self.while_stmt()
