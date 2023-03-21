@@ -16,6 +16,7 @@ use super::super::{
 pub struct Interperter {
 	pub global: Env,
 	pub local: Env,
+	return_value: Option<Literal>,
 }
 impl Interperter {
 	pub fn expr(&mut self, expr: &Expr) -> Result<Literal> {
@@ -170,7 +171,7 @@ impl Interperter {
 			}
 		}
 	}
-	pub fn stmt(&mut self, stmt: &Stmt) -> Result<Literal> {
+	fn stmt(&mut self, stmt: &Stmt) -> Result<Literal> {
 		match stmt {
 			Stmt::Expression(e) => self.expr(e),
 			Stmt::Print(e) => {
@@ -196,7 +197,14 @@ impl Interperter {
 
 				let mut result = Literal::Null;
 				for statement in statements {
-					result = self.stmt(statement)?;
+					if let Some(lit) = &self.return_value {
+						let lit = lit.clone();
+						self.return_value = None;
+
+						return Ok(lit);
+					} else {
+						result = self.stmt(statement)?;
+					}
 				}
 				self.local = *self.local.get_parent().unwrap();
 
@@ -223,7 +231,7 @@ impl Interperter {
 				if let Some(initializer) = initializer {
 					if let Stmt::Var(ref name, _) = **initializer {
 						init_param_name = Some(name.clone());
-						self.stmt(initializer)?;
+						self.exec(initializer)?;
 					} else {
 						bail!("This should be a loop interator initializer")
 					}
@@ -254,24 +262,39 @@ impl Interperter {
 				Ok(result)
 			}
 			Stmt::Function(name, inputs, block) => {
-				self.local.define(
-					name.clone(),
-					Literal::CustomFunction(CustomFn::new(
-						name.to_string(),
-						inputs.to_vec(),
-						block.clone(),
-					)),
-				);
-				Ok(Literal::Null)
+				let custom_fn = Literal::CustomFunction(CustomFn::new(
+					name.to_string(),
+					inputs.to_vec(),
+					block.clone(),
+				));
+				self.local.define(name.clone(), custom_fn.clone());
+
+				Ok(custom_fn)
 			}
-			Stmt::Return(value) => self.expr(value),
+			Stmt::Return(value) => {
+				let ret_val = self.expr(value)?;
+				self.return_value = Some(ret_val.clone());
+
+				Ok(ret_val)
+			}
+		}
+	}
+
+	pub fn exec(&mut self, stmt: &Stmt) -> Result<Literal> {
+		if let Some(lit) = &self.return_value {
+			let lit = lit.clone();
+			self.return_value = None;
+
+			Ok(lit)
+		} else {
+			self.stmt(stmt)
 		}
 	}
 	pub fn exec_block(&mut self, block: &Stmt, env: Box<Env>) -> Result<Literal> {
 		let prev_env = self.local.clone();
 		self.local = Env::new(env);
 
-		let result = self.stmt(block);
+		let result = self.exec(block);
 		self.local = prev_env;
 
 		result
@@ -288,6 +311,7 @@ impl Default for Interperter {
 		Self {
 			global,
 			local: Env::default(),
+			return_value: None,
 		}
 	}
 }

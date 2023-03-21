@@ -19,6 +19,6 @@ pub enum Stmt {
 }
 impl Stmt {
 	pub fn interpret(&self, interp: &mut Interperter) -> Result<Literal> {
-		interp.stmt(self)
+		interp.exec(self)
 	}
 }
