@@ -266,6 +266,7 @@ impl Interperter {
 					name.to_string(),
 					inputs.to_vec(),
 					block.clone(),
+					Some(Box::new(self.local.clone())),
 				));
 				self.local.define(name.clone(), custom_fn.clone());
 
