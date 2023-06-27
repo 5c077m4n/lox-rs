@@ -6,11 +6,10 @@ use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Result};
 use clap::{arg, command, Parser};
-use lox_rs::{
-	ast::visitors::interp::Interperter,
-	lexer::scanner::scan,
-	parser::Parser as ASTParser,
-};
+use tree_sitter::{Parser as TreeParser, Range};
+use tree_sitter_typescript::language_typescript;
+
+use crate::lox_rs::traverse;
 
 #[derive(Parser, Debug)]
 #[command(about, version, author)]
@@ -30,55 +29,39 @@ fn main() -> Result<()> {
 	let CLI {
 		filepath,
 		eval,
-		check_only,
-		dump_ast,
+		check_only: _,
+		dump_ast: _,
 	} = CLI::parse();
 
-	let mut interp = Interperter::default();
+	let lang = language_typescript();
+	let mut parser = TreeParser::new();
+	parser.set_language(lang)?;
 
-	if let Some(filepath) = filepath {
-		let input = fs::read(filepath)?;
-		let input = scan(&input);
+	let input = if let Some(ref filepath) = filepath {
+		fs::read(filepath)?
+	} else if let Some(ref input) = eval {
+		input.as_bytes().to_owned()
+	} else {
+		bail!("No source code found")
+	};
+	let input = std::str::from_utf8(&input)?;
 
-		let mut parser = ASTParser::new(input);
-		let (tree, errors) = parser.parse()?;
+	if let Some(tree) = parser.parse(input, None) {
+		println!("{:#?}", tree.root_node().to_sexp());
 
-		if !errors.is_empty() {
-			bail!("{:?}", &errors);
-		}
-
-		for stmt in tree {
-			if dump_ast {
-				println!("{:#?}", &stmt);
-			}
-			if !check_only {
-				if let Err(e) = stmt.interpret(&mut interp) {
-					eprintln!("{e}");
-				}
-			}
-		}
-	} else if let Some(input) = eval {
-		let input = input.as_str().as_bytes();
-		let input = scan(input);
-
-		let mut parser = ASTParser::new(input);
-		let (tree, errors) = parser.parse()?;
-
-		if !errors.is_empty() {
-			bail!("{:?}", &errors);
-		}
-
-		for stmt in tree {
-			if dump_ast {
-				println!("{:#?}", &stmt);
-			}
-			if !check_only {
-				if let Err(e) = stmt.interpret(&mut interp) {
-					eprintln!("{e}");
-				}
-			}
-		}
-	}
+		let mut cursor = tree.walk();
+		traverse(&mut cursor, &mut |n| {
+			let Range {
+				start_byte,
+				end_byte,
+				..
+			} = n.range();
+			println!("{:?}, {:?}", n, &input[start_byte..end_byte]);
+			Ok(())
+		})?;
+	} else {
+		bail!("The input could not be parsed")
+	};
 
 	Ok(())
 }
