@@ -6,6 +6,7 @@ use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Result};
 use clap::{arg, command, Parser};
+use log::{error, info};
 use tree_sitter::{Parser as TreeParser, Range};
 use tree_sitter_typescript::language_typescript;
 
@@ -46,22 +47,25 @@ fn main() -> Result<()> {
 	};
 	let input = std::str::from_utf8(&input)?;
 
-	if let Some(tree) = parser.parse(input, None) {
-		println!("{:#?}", tree.root_node().to_sexp());
-
-		let mut cursor = tree.walk();
-		traverse(&mut cursor, &mut |n| {
-			let Range {
-				start_byte,
-				end_byte,
-				..
-			} = n.range();
-			println!("{:?}, {:?}", n, &input[start_byte..end_byte]);
-			Ok(())
-		})?;
-	} else {
-		bail!("The input could not be parsed")
+	let Some(tree) = parser.parse(input, None) else {
+		bail!("The input could not be parsed");
 	};
+	println!("{:#?}", tree.root_node().to_sexp());
+
+	let mut cursor = tree.walk();
+	traverse(&mut cursor, &mut |n| {
+		let Range {
+			start_byte,
+			end_byte,
+			..
+		} = n.range();
+		if n.is_error() {
+			error!("{:?}, {:?}", n, &input[start_byte..end_byte]);
+		} else {
+			info!("{:?}, {:?}", n, &input[start_byte..end_byte]);
+		}
+		Ok(())
+	})?;
 
 	Ok(())
 }
