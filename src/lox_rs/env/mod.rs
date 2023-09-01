@@ -16,10 +16,6 @@ impl Env {
 			parent: Some(parent),
 		}
 	}
-	pub fn add_parent(&mut self, parent: Env) {
-		let parent = Box::new(parent);
-		self.parent = Some(parent);
-	}
 	pub fn get(&self, name: String) -> Result<&Literal> {
 		if let Some(value) = self.values.get(&name) {
 			Ok(value)

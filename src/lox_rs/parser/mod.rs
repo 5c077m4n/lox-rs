@@ -67,7 +67,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		Ok(!self.is_at_end() && self.current()? == token)
 	}
 	/// Match the current token against a given list and advance the index (only if there is a match)
-	fn match_token(&mut self, types: &'p [&TokenType]) -> Result<Option<&TokenType>> {
+	fn _match_token(&mut self, types: &'p [&TokenType]) -> Result<Option<&TokenType>> {
 		for t in types {
 			if self.check(t)? {
 				self.advance();

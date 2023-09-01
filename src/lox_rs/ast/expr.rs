@@ -1,11 +1,9 @@
 use std::fmt;
 
-use anyhow::Result;
-
 use super::{
 	super::lexer::tokens::token_type::{Operator, Punctuation},
 	callables::{custom_fn::CustomFn, native_fn::NativeFn},
-	visitors::{interp::Interperter, parens::parenthesize},
+	visitors::parens::parenthesize,
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -53,11 +51,6 @@ pub enum Expr {
 	Unary(Operator, Box<Expr>),
 	Variable(String),
 	Logical(Box<Expr>, Operator, Box<Expr>),
-}
-impl Expr {
-	pub fn interpret(&self, interp: &mut Interperter) -> Result<Literal> {
-		interp.expr(self)
-	}
 }
 impl fmt::Display for Expr {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

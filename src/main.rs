@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 #![deny(clippy::all)]
 
 mod lox_rs;
@@ -6,7 +5,7 @@ mod lox_rs;
 use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Result};
-use clap::{self, Parser};
+use clap::{arg, command, Parser};
 use lox_rs::{
 	ast::visitors::interp::Interperter,
 	lexer::scanner::scan,
@@ -14,26 +13,26 @@ use lox_rs::{
 };
 
 #[derive(Parser, Debug)]
-#[clap(about, version, author)]
-pub struct Args {
+#[command(about, version, author)]
+pub struct CLI {
 	pub filepath: Option<PathBuf>,
-	#[clap(short, long)]
+	#[arg(short, long)]
 	pub eval: Option<String>,
-	#[clap(short, long)]
+	#[arg(short, long)]
 	pub check_only: bool,
-	#[clap(long)]
+	#[arg(long)]
 	pub dump_ast: bool,
 }
 
 fn main() -> Result<()> {
 	env_logger::init();
 
-	let Args {
+	let CLI {
 		filepath,
 		eval,
 		check_only,
 		dump_ast,
-	} = Args::parse();
+	} = CLI::parse();
 
 	let mut interp = Interperter::default();
 
