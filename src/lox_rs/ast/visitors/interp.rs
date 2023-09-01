@@ -282,7 +282,7 @@ impl Default for Interperter {
 	fn default() -> Self {
 		let global = {
 			let mut g = Env::default();
-			g.define("now".to_owned(), Literal::NativeFunction(NOW));
+			g.define(NOW.get_name(), Literal::NativeFunction(NOW));
 			g
 		};
 		Self {

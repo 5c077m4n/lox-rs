@@ -42,4 +42,8 @@ impl NativeFn {
 	) -> Self {
 		Self { name, arity, func }
 	}
+
+	pub fn get_name(&self) -> String {
+		self.name.to_string()
+	}
 }
