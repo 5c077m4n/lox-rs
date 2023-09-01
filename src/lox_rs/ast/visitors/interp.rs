@@ -142,9 +142,9 @@ impl Interperter {
 				.cloned(),
 			Expr::Assign(name, value) => {
 				let value = self.expr(*value)?;
-				self.local.redefine(name, value)?;
+				self.local.redefine(name, value.clone())?;
 
-				Ok(Literal::Null)
+				Ok(value)
 			}
 			Expr::Logical(lhs, op, rhs) => {
 				let lhs = self.expr(*lhs)?;
@@ -177,7 +177,7 @@ impl Interperter {
 				let result = self.expr(e)?;
 				println!("{:?}", &result);
 
-				Ok(Literal::Null)
+				Ok(result)
 			}
 			Stmt::Var(name, value) => {
 				if let Some(value) = value {
@@ -194,26 +194,29 @@ impl Interperter {
 				let prev_env = self.local.clone();
 				self.local = Env::new(Box::new(prev_env));
 
+				let mut result = Literal::Null;
 				for statement in statements {
-					self.stmt(statement)?;
+					result = self.stmt(statement)?;
 				}
 				self.local = *self.local.get_parent().unwrap();
 
-				Ok(Literal::Null)
+				Ok(result)
 			}
 			Stmt::If(cond, then_block, else_block) => {
+				let mut result = Literal::Null;
 				if self.expr(cond)?.is_truthy() {
-					self.stmt(*then_block)?;
+					result = self.stmt(*then_block)?;
 				} else if let Some(else_block) = else_block {
-					self.stmt(*else_block)?;
+					result = self.stmt(*else_block)?;
 				}
-				Ok(Literal::Null)
+				Ok(result)
 			}
 			Stmt::While(cond, block) => {
+				let mut result = Literal::Null;
 				while self.expr(cond.clone())?.is_truthy() {
-					self.stmt(*block.clone())?;
+					result = self.stmt(*block.clone())?;
 				}
-				Ok(Literal::Null)
+				Ok(result)
 			}
 			Stmt::For(initializer, condition, increment, block) => {
 				let mut init_param_name: Option<String> = None;
@@ -235,19 +238,20 @@ impl Interperter {
 					}
 					stmts
 				}));
+				let mut result = Literal::Null;
 				while condition
 					.clone()
 					.map_or_else(|| Ok(Literal::Null), |expr| self.expr(expr))?
 					.is_truthy()
 				{
 					let block = block.clone();
-					self.stmt(*block)?;
+					result = self.stmt(*block)?;
 				}
 				if let Some(init_param_name) = init_param_name {
 					self.local.remove(&init_param_name);
 				}
 
-				Ok(Literal::Null)
+				Ok(result)
 			}
 			Stmt::Function(name, inputs, block) => {
 				let inputs: Vec<_> = inputs.iter().map(|p| self.expr(p.clone())).collect();
