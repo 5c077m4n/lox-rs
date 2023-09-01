@@ -32,7 +32,7 @@ fn main() -> Result<()> {
 	} = Args::parse();
 
 	if let Some(filepath) = filepath {
-		let input = fs::read(&filepath)?;
+		let input = fs::read(filepath)?;
 		let input = scan(&input);
 
 		let mut parser = ASTParser::new(input);

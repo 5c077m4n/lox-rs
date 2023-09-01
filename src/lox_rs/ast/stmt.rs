@@ -14,6 +14,7 @@ pub enum Stmt {
 	If(Expr, Box<Stmt>, Option<Box<Stmt>>),
 	While(Expr, Box<Stmt>),
 	For(Option<Box<Stmt>>, Option<Expr>, Option<Expr>, Box<Stmt>),
+	Function(String, Vec<Expr>, Box<Stmt>),
 }
 impl Stmt {
 	pub fn interpret(self) -> Result<Literal> {

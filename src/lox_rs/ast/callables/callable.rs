@@ -6,12 +6,15 @@ use super::super::expr::Literal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Callable {
-	pub arity: usize,
-	pub as_str: &'static str,
-	pub func: fn(Vec<Literal>) -> Result<Literal>,
+	pub(super) arity: usize,
+	pub(super) as_str: &'static str,
+	pub(super) func: fn(Vec<Literal>) -> Result<Literal>,
 }
 
 impl Callable {
+	pub fn arity(&self) -> usize {
+		self.arity
+	}
 	pub fn call(&self, args: Vec<Literal>) -> Result<Literal> {
 		(self.func)(args)
 	}
