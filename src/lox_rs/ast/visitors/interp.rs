@@ -65,10 +65,10 @@ impl Interperter {
 					Operator::Mul => match (left, right) {
 						(Literal::Number(n1), Literal::Number(n2)) => Literal::Number(n1 * n2),
 						(Literal::Number(n), Literal::String(s)) => {
-							Literal::String(s.repeat(f64::round(n) as usize))
+							Literal::String(s.repeat(n.round() as usize))
 						}
 						(Literal::String(s), Literal::Number(n)) => {
-							Literal::String(s.repeat(f64::round(n) as usize))
+							Literal::String(s.repeat(n.round() as usize))
 						}
 						other => bail!(
 							"Please only multiply number to number and string to number, not {:?}",
@@ -93,7 +93,7 @@ impl Interperter {
 
 				let new_lit = match op {
 					Operator::Add => match right {
-						Literal::Number(n) => Literal::Number(f64::abs(n)),
+						Literal::Number(n) => Literal::Number(n.abs()),
 						Literal::String(s) => {
 							if s.is_empty() {
 								Literal::Number(0.)
