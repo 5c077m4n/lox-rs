@@ -6,6 +6,7 @@ pub enum TokenType<'t> {
 	Literal(Literal<'t>),
 	Identifier(&'t [u8]),
 	Generic(String),
+	Empty,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
