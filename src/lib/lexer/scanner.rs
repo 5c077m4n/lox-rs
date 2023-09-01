@@ -4,7 +4,10 @@ use log::{debug, error};
 
 use super::{
 	detector::detect,
-	tokens::{token::Token, token_type::TokenType},
+	tokens::{
+		token::Token,
+		token_type::{Punctuation, TokenType},
+	},
 };
 
 pub fn scan(mut input: &[u8]) -> Box<Peekable<impl Iterator<Item = Token<'_>>>> {
@@ -26,6 +29,12 @@ pub fn scan(mut input: &[u8]) -> Box<Peekable<impl Iterator<Item = Token<'_>>>> 
 					None
 				}
 			}
+		})
+		.filter_map(|t| match *t.get() {
+			TokenType::Punctuation(Punctuation::Space) => None,
+			TokenType::Punctuation(Punctuation::Tab) => None,
+			TokenType::EndOfLine => None,
+			_ => Some(t),
 		})
 		.peekable(),
 	)
