@@ -1,6 +1,11 @@
 use std::fmt;
 
-use super::{super::lexer::tokens::token_type::Operator, visitor_fn::parenthesize};
+use anyhow::Result;
+
+use super::{
+	super::lexer::tokens::token_type::Operator,
+	visitors::{interp::interp, parens::parenthesize},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
@@ -30,5 +35,8 @@ pub enum Expr {
 impl Expr {
 	pub fn dump(&self) {
 		println!("{}", parenthesize(self));
+	}
+	pub fn interpret(&self) -> Result<Literal> {
+		interp(self)
 	}
 }
