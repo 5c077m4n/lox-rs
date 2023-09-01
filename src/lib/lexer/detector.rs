@@ -27,7 +27,7 @@ pub fn detect_punctuation(input: &[u8]) -> IResult<&[u8], Punctuation> {
 		value(Punctuation::Comma, tag(b",")),
 		value(Punctuation::Space, space1),
 		value(Punctuation::Tab, tab),
-		value(Punctuation::Eol, line_ending),
+		value(Punctuation::EndOfLine, line_ending),
 	))(input)?;
 	Ok((tail, keyword))
 }
