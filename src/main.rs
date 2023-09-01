@@ -27,8 +27,8 @@ fn main() -> Result<()> {
 	let Args {
 		filepath,
 		eval,
-		check_only: _,
-		dump_ast: _,
+		check_only,
+		dump_ast,
 	} = Args::parse();
 
 	if let Some(filepath) = filepath {
@@ -43,7 +43,14 @@ fn main() -> Result<()> {
 		}
 
 		for stmt in tree {
-			stmt.interpret()?;
+			if dump_ast {
+				println!("{:#?}", &stmt);
+			}
+			if !check_only {
+				if let Err(e) = stmt.interpret() {
+					eprintln!("{}", e);
+				}
+			}
 		}
 	} else if let Some(input) = eval {
 		let input = input.as_str().as_bytes();
@@ -57,7 +64,14 @@ fn main() -> Result<()> {
 		}
 
 		for stmt in tree {
-			stmt.interpret()?;
+			if dump_ast {
+				println!("{:#?}", &stmt);
+			}
+			if !check_only {
+				if let Err(e) = stmt.interpret() {
+					eprintln!("{}", e);
+				}
+			}
 		}
 	}
 
