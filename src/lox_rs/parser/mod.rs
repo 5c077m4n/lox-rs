@@ -490,14 +490,18 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			loop {
 				if let &TokenType::Identifier(param_name) = self.current()? {
 					let param_name = String::from_utf8(param_name.to_vec())?;
-					self.advance();
 					params.push(Expr::Variable(param_name));
+					self.advance();
 				}
 				if !self.check(&TokenType::Punctuation(token_type::Punctuation::Comma))? {
 					break;
 				}
 				self.advance();
 			}
+			self.assert_next(
+				&TokenType::Punctuation(token_type::Punctuation::BracketClose),
+				"Expected a `)` after the function's argument list",
+			)?;
 
 			if self.check(&TokenType::Punctuation(
 				token_type::Punctuation::BracketCurlyOpen,
@@ -507,7 +511,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 				let block = self.block()?;
 				return Ok(Stmt::Function(fn_name, params, Box::new(block)));
 			} else {
-				bail!("Expected here a block's start");
+				bail!("Expected here a block start - `{{`");
 			}
 		}
 		self.assert_next(
