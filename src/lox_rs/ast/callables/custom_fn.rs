@@ -23,7 +23,7 @@ impl fmt::Display for CustomFn {
 		write!(
 			f,
 			"function {name}({inputs:?}) {{
-                {body:?}
+                {body:#?}
             }}",
 		)
 	}
