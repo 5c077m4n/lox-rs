@@ -13,12 +13,12 @@ use rlox::{lexer::scanner::scan, parser::Parser as ASTParser};
 #[clap(about, version, author)]
 pub struct Args {
 	pub filepath: Option<PathBuf>,
-
 	#[clap(short, long)]
 	pub eval: Option<String>,
-
 	#[clap(short, long)]
 	pub check_only: bool,
+	#[clap(long)]
+	pub dump_ast: bool,
 }
 
 fn main() -> Result<()> {
@@ -28,6 +28,7 @@ fn main() -> Result<()> {
 		filepath,
 		eval,
 		check_only: _,
+		dump_ast,
 	} = Args::parse();
 
 	if let Some(filepath) = filepath {
@@ -41,7 +42,9 @@ fn main() -> Result<()> {
 			bail!("{:?}", &errors);
 		}
 
-		tree.dump();
+		if dump_ast {
+			tree.dump();
+		}
 	} else if let Some(input) = eval {
 		let input = input.as_str().as_bytes();
 		let input = scan(input);
@@ -53,7 +56,9 @@ fn main() -> Result<()> {
 			bail!("{:?}", &errors);
 		}
 
-		tree.dump();
+		if dump_ast {
+			tree.dump();
+		}
 	}
 
 	Ok(())
