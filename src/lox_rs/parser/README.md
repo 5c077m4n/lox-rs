@@ -26,7 +26,8 @@
 | fnDecl      | `fn` function                                                                             |
 | function    | IDENTIFIER `(` parameters ? `)` block                                                     |
 | parameters  | INDTIFIER ( `,` IDENTIFIER )\*                                                            |
-| statement   | exprStmt \| printStmt \| ifStmt \| block \| whileStmt \| forStmt                          |
+| statement   | exprStmt \| printStmt \| ifStmt \| block \| whileStmt \| forStmt \| returnStmt            |
+| returnStmt  | `return` ( expression )? `;`                                                              |
 | whileStmt   | `while` `(` expression `)` statment                                                       |
 | forStmt     | `for` `(` ( varDecl \| exprStmt \| `;` ) ( expression )? `;` ( expression )? `)` statment |
 | block       | `{` ( declaration )\* `}`                                                                 |
