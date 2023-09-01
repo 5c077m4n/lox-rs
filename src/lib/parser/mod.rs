@@ -1,63 +1,62 @@
+use std::iter::Peekable;
+
 use anyhow::{anyhow, bail, Result};
-use log::debug;
 
 use super::{
 	ast::expr::{Expr, Literal},
 	lexer::tokens::{
 		token::Token,
-		token_type::{self, Operator, Punctuation, TokenType},
+		token_type::{self, TokenType},
 	},
 };
 
-pub struct Parser<'p> {
-	tokens: &'p [Token<'p>],
-	index: usize,
+pub struct Parser<'p, I: Iterator<Item = Token<'p>>> {
+	tokens: Box<Peekable<I>>,
+	history: Vec<Token<'p>>,
 	errors: Vec<&'p str>,
 }
-impl<'p> Parser<'p> {
-	pub fn new(tokens: &'p [Token<'p>]) -> Self {
+impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
+	pub fn new(tokens: Box<Peekable<I>>) -> Self {
 		Parser {
 			tokens,
-			index: 0,
+			history: Vec::new(),
 			errors: Vec::new(),
 		}
 	}
-	fn get_token_at(&self, rel: isize) -> Result<&TokenType> {
-		let pos = (self.index as isize) + rel;
-		let pos: usize = pos.try_into()?;
-
+	fn get_token_at(&self, rel: usize) -> Result<&TokenType> {
+		let pos = self.history.len().saturating_sub(rel);
 		let token = self
-			.tokens
+			.history
 			.get(pos)
 			.ok_or_else(|| anyhow!("There should be a token @ {}", pos))?
 			.get();
 		Ok(token)
 	}
-	fn is_at_end(&self) -> Result<bool> {
-		Ok(self.get_token_at(0)? == &TokenType::EndOfFile)
+	fn is_at_end(&self) -> bool {
+		if let Some(token) = self.history.last() {
+			token.get() == &TokenType::EndOfFile
+		} else {
+			true
+		}
 	}
 	/// Advance the current index if not at the EOF yet
 	fn advance(&mut self) -> Result<()> {
-		if !(self.is_at_end()?) {
-			self.index += 1;
+		if let Some(token) = self.tokens.next() {
+			self.history.push(token);
 		}
 		Ok(())
 	}
 	/// Get current token
-	fn peek(&self) -> Result<&TokenType> {
-		debug!("{:?}", self.tokens);
+	fn current(&self) -> Result<&TokenType> {
 		self.get_token_at(0)
 	}
 	/// Get previous token
 	fn prev(&self) -> Result<&TokenType> {
-		self.get_token_at(-1)
+		self.get_token_at(1)
 	}
 	/// Check if the current token is of a give type
 	fn check(&self, token: &TokenType) -> Result<bool> {
-		if self.is_at_end()? {
-			return Ok(false);
-		}
-		Ok(self.peek()? == token)
+		Ok(!self.is_at_end() && self.current()? == token)
 	}
 	/// Match the current token against a given list and advance the index only if there is a match
 	fn match_type(&mut self, types: &'p [&TokenType]) -> Result<Option<&TokenType>> {
@@ -69,12 +68,6 @@ impl<'p> Parser<'p> {
 		}
 		Ok(None)
 	}
-	fn get_op_token(&self) -> Result<&Operator> {
-		match self.peek()? {
-			TokenType::Operator(op) => Ok(op),
-			other => bail!("This should be an operator '{:?}'", &other),
-		}
-	}
 
 	fn expression(&mut self) -> Result<Expr> {
 		self.equality()
@@ -82,21 +75,21 @@ impl<'p> Parser<'p> {
 	fn equality(&mut self) -> Result<Expr> {
 		let mut expr = self.comparison()?;
 
-		while let Some(op) = self.match_type(&[
-			&TokenType::Operator(Operator::EqEq),
-			&TokenType::Operator(Operator::NotEq),
-		])? {
-			if let TokenType::Operator(op) = op {
-				let op = op.clone();
-				let right = self.comparison()?;
+		while let Some(op) = self.tokens.next() {
+			use token_type::Operator;
 
-				expr = Expr::Binary {
-					left: Box::new(expr),
-					op,
-					right: Box::new(right),
-				};
-			} else {
-				unreachable!("The token should be an operator - tested above")
+			match op.get() {
+				TokenType::Operator(op @ (Operator::EqEq | Operator::NotEq)) => {
+					let op = op.clone();
+					let right = self.comparison()?;
+
+					expr = Expr::Binary {
+						left: Box::new(expr),
+						op,
+						right: Box::new(right),
+					};
+				}
+				_ => unreachable!("How did I get here?"),
 			}
 		}
 		Ok(expr)
@@ -104,45 +97,53 @@ impl<'p> Parser<'p> {
 	fn comparison(&mut self) -> Result<Expr> {
 		let mut expr = self.term()?;
 
-		while let Some(op) = self.match_type(&[
-			&TokenType::Operator(Operator::Gt),
-			&TokenType::Operator(Operator::Gte),
-			&TokenType::Operator(Operator::Lt),
-			&TokenType::Operator(Operator::Lte),
-		])? {
-			if let TokenType::Operator(op) = op {
-				let op = op.clone();
-				let right = self.term()?;
+		while let Some(op) = self.tokens.next() {
+			use token_type::Operator;
 
-				expr = Expr::Binary {
-					left: Box::new(expr),
-					op,
-					right: Box::new(right),
-				};
-			} else {
-				unreachable!("The token should be an operator - tested above")
+			match op.get() {
+				TokenType::Operator(
+					op @ (Operator::Gt | Operator::Gte | Operator::Lt | Operator::Lte),
+				) => {
+					let op = op.clone();
+					let right = self.term()?;
+
+					expr = Expr::Binary {
+						left: Box::new(expr),
+						op,
+						right: Box::new(right),
+					};
+				}
+				other => unreachable!(
+					"The token should be an operator, but got {:?} - tested above",
+					&other
+				),
 			}
 		}
 		Ok(expr)
 	}
 	fn term(&mut self) -> Result<Expr> {
+		use token_type::Operator;
+
 		let mut expr = self.factor()?;
 
-		while let Some(op) = self.match_type(&[
-			&TokenType::Operator(Operator::Sub),
-			&TokenType::Operator(Operator::Add),
-		])? {
-			if let TokenType::Operator(op) = op {
-				let op = op.clone();
-				let right = self.factor()?;
+		while let Some(op) = self.tokens.next() {
+			match op.get() {
+				TokenType::Operator(op @ (Operator::Add | Operator::Sub)) => {
+					let op = op.clone();
+					let right = self.factor()?;
 
-				expr = Expr::Binary {
-					left: Box::new(expr),
-					op,
-					right: Box::new(right),
-				};
-			} else {
-				unreachable!("The token should be an operator - tested above")
+					expr = Expr::Binary {
+						left: Box::new(expr),
+						op,
+						right: Box::new(right),
+					};
+				}
+				other => {
+					unreachable!(
+						"The token should be an operator, but got {:?} - tested above",
+						&other
+					)
+				}
 			}
 		}
 		Ok(expr)
@@ -150,11 +151,10 @@ impl<'p> Parser<'p> {
 	fn factor(&mut self) -> Result<Expr> {
 		let mut expr = self.unary()?;
 
-		while let Some(op) = self.match_type(&[
-			&TokenType::Operator(Operator::Mul),
-			&TokenType::Operator(Operator::Div),
-		])? {
-			if let TokenType::Operator(op) = op {
+		while let Some(op) = self.tokens.next() {
+			use token_type::Operator;
+
+			if let TokenType::Operator(op @ (Operator::Mul | Operator::Div)) = op.get() {
 				let op = op.clone();
 				let right = self.unary()?;
 
@@ -170,11 +170,12 @@ impl<'p> Parser<'p> {
 		Ok(expr)
 	}
 	fn unary(&mut self) -> Result<Expr> {
-		if let Some(op) = self.match_type(&[
-			&TokenType::Operator(Operator::Not),
-			&TokenType::Operator(Operator::Sub),
-		])? {
-			if let TokenType::Operator(op) = op {
+		if let Some(op) = self.tokens.next() {
+			use token_type::Operator;
+
+			if let TokenType::Operator(op @ (Operator::Not | Operator::Sub | Operator::Add)) =
+				op.get()
+			{
 				let op = op.clone();
 				let right = self.unary()?;
 
@@ -190,40 +191,38 @@ impl<'p> Parser<'p> {
 		}
 	}
 	fn primary(&mut self) -> Result<Expr> {
-		// TODO: fix this to only advance once
-		if let TokenType::Literal(lit) = self.peek()? {
-			let lit = match lit {
-				token_type::Literal::String(v) => Ok(Expr::Literal {
-					value: Literal::String(String::from_utf8(v.to_vec())?),
-				}),
-				token_type::Literal::Number(v) => Ok(Expr::Literal {
-					value: Literal::Number(*v),
-				}),
-				token_type::Literal::Boolean(v) => Ok(Expr::Literal {
-					value: Literal::Boolean(*v),
-				}),
-				token_type::Literal::Null => Ok(Expr::Literal {
-					value: Literal::Null,
-				}),
-			};
-			self.advance()?;
+		let Some(token) = self.tokens.next() else {
+			bail!("Expression expected here");
+        };
+		let token = token.get();
 
-			lit
-		} else if let Some(_token) =
-			self.match_type(&[&TokenType::Punctuation(Punctuation::BracketOpen)])?
-		{
-			let expr = self.expression()?;
-			self.consume(
-				&TokenType::Punctuation(Punctuation::BracketClose),
-				"Expected a `)` after the expression",
-			)?;
+		match token {
+			TokenType::Literal(lit) => {
+				let value = match lit {
+					token_type::Literal::String(v) => {
+						Literal::String(String::from_utf8(v.to_vec())?)
+					}
+					token_type::Literal::Number(v) => Literal::Number(*v),
+					token_type::Literal::Boolean(v) => Literal::Boolean(*v),
+					token_type::Literal::Null => Literal::Null,
+				};
+				Ok(Expr::Literal { value })
+			}
+			TokenType::Punctuation(token_type::Punctuation::BracketOpen) => {
+				let expr = self.expression()?;
+				self.consume(
+					&TokenType::Punctuation(token_type::Punctuation::BracketClose),
+					"Expected a `)` after the expression",
+				)?;
 
-			Ok(Expr::Grouping {
-				expr: Box::new(expr),
-			})
-		} else {
-			self.errors.push("Expression expected here");
-			bail!("Expression expected here")
+				Ok(Expr::Grouping {
+					expr: Box::new(expr),
+				})
+			}
+			other => {
+				// FIXME: A result should be retruned here to not break flow
+				bail!("Expression expected here, but got {:?}", &other)
+			}
 		}
 	}
 	fn consume(&mut self, until_token: &TokenType, err_msg: &'p str) -> Result<()> {
