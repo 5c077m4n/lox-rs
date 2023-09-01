@@ -27,6 +27,7 @@ impl fmt::Display for Literal {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
+	Assign(String, Box<Expr>),
 	Binary(Box<Expr>, Operator, Box<Expr>),
 	Grouping(Box<Expr>),
 	Literal(Literal),
@@ -35,7 +36,7 @@ pub enum Expr {
 }
 impl Expr {
 	pub fn interpret(self) -> Result<Literal> {
-		let interp = INTERPERTER.lock().unwrap();
+		let mut interp = INTERPERTER.lock().unwrap();
 		interp.expr(self)
 	}
 }

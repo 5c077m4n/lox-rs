@@ -3,6 +3,7 @@
 | name        | value                                                                   |
 | ----------- | ----------------------------------------------------------------------- |
 | expression  | equality                                                                |
+| assignment  | IDENTIFIER `=` assignment \| equality                                   |
 | equality    | comparison ( ( `!=` \| `==` ) comparison )\*                            |
 | comparison  | term ( ( `>` \| `>=` \| `<` \| `<=` ) term )\*                          |
 | term        | factor ( ( `-` \| `+` ) factor )\*                                      |

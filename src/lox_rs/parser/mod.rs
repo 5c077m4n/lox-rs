@@ -111,7 +111,26 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	}
 
 	fn expression(&mut self) -> Result<Expr> {
-		self.equality()
+		self.assignment()
+	}
+	fn assignment(&mut self) -> Result<Expr> {
+		let expr = self.equality()?;
+
+		if let TokenType::Operator(token_type::Operator::Eq) = self.current()? {
+			self.advance();
+
+			let value = self.assignment()?;
+			let value = Box::new(value);
+
+			if let Expr::Variable(name) = expr {
+				Ok(Expr::Assign(name, value))
+			} else {
+				let should_be_eq = self.prev()?;
+				bail!("{:?} is an invalid assignment target", &should_be_eq)
+			}
+		} else {
+			Ok(expr)
+		}
 	}
 	fn equality(&mut self) -> Result<Expr> {
 		use token_type::Operator;
