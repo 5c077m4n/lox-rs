@@ -2,7 +2,7 @@ use anyhow::Result;
 use nom::{
 	branch::alt,
 	bytes::complete::{tag, take_until},
-	character::complete::{alpha1, alphanumeric1, char, digit1, line_ending, space1, tab},
+	character::complete::{alpha1, alphanumeric1, anychar, char, digit1, line_ending, space1, tab},
 	combinator::{map, map_res, recognize, value},
 	multi::{many0, many1, many_m_n},
 	sequence::{delimited, terminated, tuple},
@@ -120,6 +120,10 @@ pub fn detect(input: &[u8]) -> IResult<&[u8], TokenType> {
 		map(detect_operator, TokenType::Operator),
 		map(detect_punctuation, TokenType::Punctuation),
 		map(alt((decimal, string, identifier)), TokenType::Literal),
+		map(many1(anychar), |t| {
+			let t: String = t.iter().collect();
+			TokenType::Generic(t)
+		}),
 	))(input)?;
 	Ok((tail, token))
 }
