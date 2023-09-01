@@ -21,5 +21,10 @@ pub fn parenthesize(expr: &Expr) -> String {
 			let value = &parenthesize(value);
 			format!("(assign {} {})", var_name, value)
 		}
+		Expr::Logical(expr_1, op, expr_2) => {
+			let expr_1 = &parenthesize(expr_1);
+			let expr_2 = &parenthesize(expr_2);
+			format!("({} {} {})", op.to_str(), expr_1, expr_2)
+		}
 	}
 }

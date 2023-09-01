@@ -5,7 +5,9 @@
 | name       | value                                                                   |
 | ---------- | ----------------------------------------------------------------------- |
 | expression | equality                                                                |
-| assignment | IDENTIFIER `=` assignment \| equality                                   |
+| assignment | IDENTIFIER `=` assignment \| equality \| logicOr                        |
+| logicOr    | logicAnd ( `or` logicAnd )\*                                            |
+| logicAnd   | equality ( `and` equality )\*                                           |
 | equality   | comparison ( ( `!=` \| `==` ) comparison )\*                            |
 | comparison | term ( ( `>` \| `>=` \| `<` \| `<=` ) term )\*                          |
 | term       | factor ( ( `-` \| `+` ) factor )\*                                      |

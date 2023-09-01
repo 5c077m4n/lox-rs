@@ -113,8 +113,36 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	fn expression(&mut self) -> Result<Expr> {
 		self.assignment()
 	}
+	fn and(&mut self) -> Result<Expr> {
+		let mut expr = self.equality()?;
+
+		while let TokenType::Operator(op @ token_type::Operator::And) = self.current()? {
+			let op = op.clone();
+			self.advance();
+
+			let right_expr = self.equality()?;
+			let right_expr = Box::new(right_expr);
+
+			expr = Expr::Logical(Box::new(expr), op, right_expr);
+		}
+		Ok(expr)
+	}
+	fn or(&mut self) -> Result<Expr> {
+		let mut expr = self.and()?;
+
+		while let TokenType::Operator(op @ token_type::Operator::Or) = self.current()? {
+			let op = op.clone();
+			self.advance();
+
+			let right_expr = self.and()?;
+			let right_expr = Box::new(right_expr);
+
+			expr = Expr::Logical(Box::new(expr), op, right_expr);
+		}
+		Ok(expr)
+	}
 	fn assignment(&mut self) -> Result<Expr> {
-		let expr = self.equality()?;
+		let expr = self.or()?;
 
 		if let TokenType::Operator(token_type::Operator::Eq) = self.current()? {
 			self.advance();
