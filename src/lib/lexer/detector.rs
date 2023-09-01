@@ -3,7 +3,7 @@ use nom::{
 	branch::alt,
 	bytes::complete::{tag, take_until},
 	character::complete::{alpha1, alphanumeric1, anychar, char, digit1, line_ending, space1, tab},
-	combinator::{map, map_res, recognize, value},
+	combinator::{eof, map, map_res, recognize, value},
 	multi::{many0, many1, many_m_n},
 	sequence::{delimited, terminated, tuple},
 	IResult,
@@ -27,7 +27,6 @@ pub fn detect_punctuation(input: &[u8]) -> IResult<&[u8], Punctuation> {
 		value(Punctuation::Comma, tag(b",")),
 		value(Punctuation::Space, space1),
 		value(Punctuation::Tab, tab),
-		value(Punctuation::EndOfLine, line_ending),
 	))(input)?;
 	Ok((tail, keyword))
 }
@@ -69,11 +68,6 @@ pub fn detect_keyword(input: &[u8]) -> IResult<&[u8], Keyword> {
 		value(Keyword::This, tag(b"this")),
 		value(Keyword::Var, tag(b"var")),
 	))(input)?;
-	Ok((tail, kw))
-}
-
-pub fn detect_empty(input: &[u8]) -> IResult<&[u8], TokenType> {
-	let (tail, kw) = value(TokenType::Empty, tag(b""))(input)?;
 	Ok((tail, kw))
 }
 
@@ -119,6 +113,14 @@ pub fn detect_identifier(input: &[u8]) -> IResult<&[u8], &[u8]> {
 	Ok((tail, token))
 }
 
+pub fn detect_ends(input: &[u8]) -> IResult<&[u8], TokenType> {
+	let (tail, kw) = alt((
+		value(TokenType::EndOfFile, eof),
+		value(TokenType::EndOfLine, line_ending),
+	))(input)?;
+	Ok((tail, kw))
+}
+
 pub fn detect(input: &[u8]) -> IResult<&[u8], TokenType> {
 	let (tail, token) = alt((
 		map(detect_keyword, TokenType::Keyword),
@@ -126,11 +128,8 @@ pub fn detect(input: &[u8]) -> IResult<&[u8], TokenType> {
 		map(detect_punctuation, TokenType::Punctuation),
 		map(alt((detect_decimal, detect_string)), TokenType::Literal),
 		map(detect_identifier, TokenType::Identifier),
-		map(many1(anychar), |t| {
-			let t: String = t.iter().collect();
-			TokenType::Generic(t)
-		}),
-		detect_empty,
+		detect_ends,
+		map(many1(anychar), TokenType::Generic),
 	))(input)?;
 	Ok((tail, token))
 }

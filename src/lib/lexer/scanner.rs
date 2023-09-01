@@ -2,8 +2,10 @@ use std::iter::{self, Peekable};
 
 use log::{debug, error};
 
-use super::{detector::detect, tokens::token::Token};
-use crate::lib::lexer::tokens::token_type::TokenType;
+use super::{
+	detector::detect,
+	tokens::{token::Token, token_type::TokenType},
+};
 
 pub fn scan(mut input: &[u8]) -> Box<Peekable<impl Iterator<Item = Token<'_>>>> {
 	Box::new(
@@ -13,7 +15,7 @@ pub fn scan(mut input: &[u8]) -> Box<Peekable<impl Iterator<Item = Token<'_>>>> 
 					input = tail;
 					debug!("{:#?}", &token_type);
 
-					if token_type != TokenType::Empty {
+					if token_type != TokenType::EndOfFile {
 						Some(Token::new(token_type, "", 0, 0))
 					} else {
 						None
