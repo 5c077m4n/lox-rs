@@ -33,15 +33,21 @@ impl Callable for CustomFn {
 		self.inputs.len()
 	}
 	fn call(&self, interp: &mut Interperter, args: Vec<Expr>) -> Result<Literal> {
-		let Self { name, inputs, body } = self;
-		let mut fn_env = Env::new(Box::new(interp.global.clone()));
+		let Self {
+			name: _,
+			inputs: _,
+			body,
+		} = self;
+		let fn_env = Env::new(Box::new(interp.global.clone()));
+		let mut fn_env = Box::new(fn_env);
 
 		for arg in args.iter() {
-			let arg = arg.clone();
-			let arg = interp.expr(arg)?;
-			fn_env.define(arg.to_string(), arg);
+			let arg_name = arg.to_string();
+			let arg = interp.expr(arg.clone())?;
+
+			fn_env.define(arg_name, arg);
 		}
-		todo!()
+		interp.exec_block(body, fn_env)
 	}
 	fn to_string(&self) -> String {
 		format!("{self}")
