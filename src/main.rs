@@ -1,13 +1,13 @@
 #![allow(dead_code)]
 #![deny(clippy::all)]
 
-mod rlox;
+mod lox_rs;
 
 use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Result};
 use clap::{self, Parser};
-use rlox::{lexer::scanner::scan, parser::Parser as ASTParser};
+use lox_rs::{lexer::scanner::scan, parser::Parser as ASTParser};
 
 #[derive(Parser, Debug)]
 #[clap(about, version, author)]
