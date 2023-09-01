@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{super::lexer::tokens::token_type::Operator, visitor_fn::parenthesize};
 
 #[derive(Debug)]
@@ -7,13 +9,13 @@ pub enum Literal {
 	Boolean(bool),
 	Null,
 }
-impl ToString for Literal {
-	fn to_string(&self) -> String {
+impl fmt::Display for Literal {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
-			Literal::Number(n) => n.to_string(),
-			Literal::String(s) => s.to_owned(),
-			Literal::Boolean(b) => b.to_string(),
-			Literal::Null => "null".to_string(),
+			Literal::Number(n) => write!(f, "{}", n),
+			Literal::String(s) => write!(f, "{}", s),
+			Literal::Boolean(b) => write!(f, "{}", b),
+			Literal::Null => write!(f, "null"),
 		}
 	}
 }

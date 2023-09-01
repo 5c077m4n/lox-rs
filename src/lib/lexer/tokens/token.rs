@@ -26,9 +26,10 @@ impl<'t> Token<'t> {
 }
 impl<'t> fmt::Display for Token<'t> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_fmt(format_args!(
+		write!(
+			f,
 			"{:?} {} @ {}:{}",
 			self.token_type, self.lexme, self.line, self.column
-		))
+		)
 	}
 }
