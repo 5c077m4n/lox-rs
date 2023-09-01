@@ -38,7 +38,6 @@ pub enum Expr<'e> {
 		right: &'e Expr<'e>,
 	},
 }
-
 impl<'a> Expr<'a> {
 	fn dump(&self) {
 		println!("{}", parenthesize(self));
