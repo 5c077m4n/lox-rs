@@ -114,7 +114,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 					};
 				}
 				other => unreachable!(
-					"The token should be an operator, but got {:?} - tested above",
+					"The token should be '>', '>=', '<', or '<=', but got {:?}",
 					&other
 				),
 			}
@@ -139,10 +139,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 					};
 				}
 				other => {
-					unreachable!(
-						"The token should be an operator, but got {:?} - tested above",
-						&other
-					)
+					unreachable!("The token should be '+' or '-', but got {:?}", &other)
 				}
 			}
 		}
@@ -164,7 +161,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 					right: Box::new(right),
 				};
 			} else {
-				unreachable!("The token should be an operator - tested above")
+				unreachable!("The token should be '*' or '/' - tested above")
 			}
 		}
 		Ok(expr)
@@ -173,28 +170,32 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		if let Some(op) = self.tokens.next() {
 			use token_type::Operator;
 
-			if let TokenType::Operator(op @ (Operator::Not | Operator::Sub | Operator::Add)) =
-				op.get()
-			{
-				let op = op.clone();
-				let right = self.unary()?;
+			match op.get() {
+				TokenType::Operator(op @ (Operator::Not | Operator::Sub | Operator::Add)) => {
+					let op = op.clone();
+					let right = self.unary()?;
 
-				Ok(Expr::Unary {
-					op,
-					right: Box::new(right),
-				})
-			} else {
-				unreachable!("The token should be an operator - tested above")
+					Ok(Expr::Unary {
+						op,
+						right: Box::new(right),
+					})
+				}
+				other => {
+					unreachable!(
+						"The token should be an unary '!', '-', or '+', but got {:?}",
+						&other
+					)
+				}
 			}
 		} else {
 			self.primary()
 		}
 	}
 	fn primary(&mut self) -> Result<Expr> {
-		let Some(token) = self.tokens.next() else {
-			bail!("Expression expected here");
-        };
-		let token = token.get();
+		let token = match self.tokens.next() {
+			Some(token) => token.get().to_owned(),
+			_ => bail!("Expression expected here"),
+		};
 
 		match token {
 			TokenType::Literal(lit) => {
@@ -202,8 +203,8 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 					token_type::Literal::String(v) => {
 						Literal::String(String::from_utf8(v.to_vec())?)
 					}
-					token_type::Literal::Number(v) => Literal::Number(*v),
-					token_type::Literal::Boolean(v) => Literal::Boolean(*v),
+					token_type::Literal::Number(v) => Literal::Number(v),
+					token_type::Literal::Boolean(v) => Literal::Boolean(v),
 					token_type::Literal::Null => Literal::Null,
 				};
 				Ok(Expr::Literal { value })
