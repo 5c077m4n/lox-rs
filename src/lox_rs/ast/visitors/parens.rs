@@ -26,5 +26,6 @@ pub fn parenthesize(expr: &Expr) -> String {
 			let expr_2 = &parenthesize(expr_2);
 			format!("({} {} {})", op.to_str(), expr_1, expr_2)
 		}
+		Expr::Call(callee, _paren, args) => format!("({}, {:?})", callee, args),
 	}
 }
