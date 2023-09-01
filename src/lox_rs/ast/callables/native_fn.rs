@@ -18,10 +18,7 @@ impl Callable for NativeFn {
 		self.arity
 	}
 	fn call(&self, interp: &mut Interperter, args: Vec<Expr>) -> Result<Literal> {
-		let args: Vec<Literal> = args
-			.iter()
-			.map(|a| interp.expr(a.clone()).unwrap())
-			.collect();
+		let args: Vec<Literal> = args.iter().map(|a| interp.expr(a).unwrap()).collect();
 		(self.func)(args)
 	}
 	fn to_string(&self) -> String {

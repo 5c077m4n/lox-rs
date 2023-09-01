@@ -17,7 +17,7 @@ pub enum Stmt {
 	Function(String, Vec<Expr>, Box<Stmt>),
 }
 impl Stmt {
-	pub fn interpret(self, interp: &mut Interperter) -> Result<Literal> {
+	pub fn interpret(&self, interp: &mut Interperter) -> Result<Literal> {
 		interp.stmt(self)
 	}
 }
