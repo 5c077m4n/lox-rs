@@ -142,7 +142,6 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			self.advance();
 
 			let right = self.comparison()?;
-
 			expr = Expr::Binary(Box::new(expr), op, Box::new(right));
 		}
 		Ok(expr)
@@ -246,7 +245,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			}
 			other => {
 				// FIXME: A result should be retruned here to not break flow
-				bail!("Unknown primary expression received: {:?}", &other)
+				bail!("Unknown primary expression received: {:?}", &other);
 			}
 		}
 	}
@@ -267,10 +266,32 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		)?;
 		Ok(Stmt::Expression(expr))
 	}
+	fn block(&mut self) -> Result<Stmt> {
+		let mut statments: Vec<Stmt> = Vec::new();
+
+		while !self.check(&TokenType::Punctuation(
+			token_type::Punctuation::BracketCurlyClose,
+		))? && !self.is_at_end()
+		{
+			let decl = self.declaration()?;
+			statments.push(decl);
+		}
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketCurlyClose),
+			"Expected here a `}` to close the block",
+		)?;
+
+		Ok(Stmt::Block(statments))
+	}
 	fn statement(&mut self) -> Result<Stmt> {
 		if self.current()? == &TokenType::Keyword(token_type::Keyword::Print) {
 			self.advance();
 			self.print_stmt()
+		} else if self.current()?
+			== &TokenType::Punctuation(token_type::Punctuation::BracketCurlyOpen)
+		{
+			self.advance();
+			self.block()
 		} else {
 			self.expr_stmt()
 		}

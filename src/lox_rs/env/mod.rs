@@ -4,12 +4,18 @@ use anyhow::{bail, Result};
 
 use super::ast::expr::Literal;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Env {
 	values: BTreeMap<String, Literal>,
 	parent: Option<Box<Env>>,
 }
 impl Env {
+	pub fn new(parent: Box<Env>) -> Self {
+		Self {
+			values: Default::default(),
+			parent: Some(parent),
+		}
+	}
 	pub fn add_parent(&mut self, parent: Env) {
 		let parent = Box::new(parent);
 		self.parent = Some(parent);
@@ -22,6 +28,9 @@ impl Env {
 		} else {
 			bail!("Undefined variable `{}`", name);
 		}
+	}
+	pub fn get_parent(&self) -> Option<Box<Self>> {
+		self.parent.clone()
 	}
 	pub fn define(&mut self, name: String, value: Literal) {
 		self.values.insert(name, value);
