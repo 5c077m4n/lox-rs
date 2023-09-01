@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::token_type::TokenType;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token<'t> {
 	token_type: TokenType<'t>,
 	lexme: &'t str,
@@ -19,6 +19,9 @@ impl<'t> Token<'t> {
 			line,
 			column,
 		}
+	}
+	pub fn get(&self) -> &TokenType<'t> {
+		&self.token_type
 	}
 	pub fn to_str(&self) -> &str {
 		self.lexme
