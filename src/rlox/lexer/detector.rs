@@ -61,7 +61,6 @@ pub fn detect_keyword(input: &[u8]) -> IResult<&[u8], Keyword> {
 		value(Keyword::Function, tag(b"fn")),
 		value(Keyword::For, tag(b"for")),
 		value(Keyword::While, tag(b"while")),
-		value(Keyword::Null, tag(b"null")),
 		value(Keyword::Print, tag(b"print")),
 		value(Keyword::Return, tag(b"return")),
 		value(Keyword::Super, tag(b"super")),
@@ -71,7 +70,7 @@ pub fn detect_keyword(input: &[u8]) -> IResult<&[u8], Keyword> {
 	Ok((tail, kw))
 }
 
-pub fn detect_decimal(input: &[u8]) -> IResult<&[u8], Literal> {
+pub fn detect_decimal(input: &[u8]) -> IResult<&[u8], f64> {
 	let (tail, token) = map_res(
 		recognize(tuple((
 			many_m_n(0, 1, char('-')),
@@ -94,15 +93,24 @@ pub fn detect_decimal(input: &[u8]) -> IResult<&[u8], Literal> {
 		},
 	)(input)?;
 
-	Ok((tail, Literal::Number(token)))
+	Ok((tail, token))
 }
 
-pub fn detect_string(input: &[u8]) -> IResult<&[u8], Literal> {
+pub fn detect_string(input: &[u8]) -> IResult<&[u8], &[u8]> {
 	let (tail, token) = alt((
 		delimited(char('\''), take_until("'"), char('\'')),
 		delimited(char('"'), take_until("\""), char('"')),
 	))(input)?;
-	Ok((tail, Literal::String(token)))
+	Ok((tail, token))
+}
+
+pub fn detect_literal(input: &[u8]) -> IResult<&[u8], Literal> {
+	let (tail, token) = alt((
+		map(detect_decimal, Literal::Number),
+		map(detect_string, Literal::String),
+		value(Literal::Null, tag("null")),
+	))(input)?;
+	Ok((tail, token))
 }
 
 pub fn detect_identifier(input: &[u8]) -> IResult<&[u8], &[u8]> {
@@ -126,9 +134,9 @@ pub fn detect(input: &[u8]) -> IResult<&[u8], TokenType> {
 		map(detect_keyword, TokenType::Keyword),
 		map(detect_operator, TokenType::Operator),
 		map(detect_punctuation, TokenType::Punctuation),
-		map(alt((detect_decimal, detect_string)), TokenType::Literal),
-		map(detect_identifier, TokenType::Identifier),
+		map(detect_literal, TokenType::Literal),
 		detect_ends,
+		map(detect_identifier, TokenType::Identifier),
 		map(many1(anychar), TokenType::Generic),
 	))(input)?;
 	Ok((tail, token))

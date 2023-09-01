@@ -3,7 +3,7 @@ use anyhow::Result;
 use super::{
 	super::lexer::tokens::{
 		token::Token,
-		token_type::{Keyword, Literal, Operator, TokenType},
+		token_type::{Literal, Operator, TokenType},
 	},
 	scanner::scan,
 };
@@ -15,7 +15,7 @@ fn sanity() -> Result<()> {
 
 	assert_eq!(
 		input,
-		vec![Token::new(TokenType::Keyword(Keyword::Null), "", 0, 0)]
+		vec![Token::new(TokenType::Literal(Literal::Null), "", 0, 0)]
 	);
 	Ok(())
 }
