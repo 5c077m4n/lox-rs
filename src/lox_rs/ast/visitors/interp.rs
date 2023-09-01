@@ -187,6 +187,12 @@ impl Interperter {
 				}
 				Ok(Literal::Null)
 			}
+			Stmt::While(cond, block) => {
+				while self.expr(cond.clone())?.is_truthy() {
+					self.stmt(*block.clone())?;
+				}
+				Ok(Literal::Null)
+			}
 		}
 	}
 }

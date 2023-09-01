@@ -336,6 +336,20 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 		Ok(Stmt::If(condition, then_branch, else_branch))
 	}
+	fn while_stmt(&mut self) -> Result<Stmt> {
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketOpen),
+			"Expected a `(` before the `while` condition",
+		)?;
+		let condition = self.expression()?;
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::BracketClose),
+			"Expected a `)` after the `while` condition",
+		)?;
+		let body = self.statement()?;
+
+		Ok(Stmt::While(condition, Box::new(body)))
+	}
 	fn statement(&mut self) -> Result<Stmt> {
 		if self.current()? == &TokenType::Keyword(token_type::Keyword::If) {
 			self.advance();
@@ -343,6 +357,9 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		} else if self.current()? == &TokenType::Keyword(token_type::Keyword::Print) {
 			self.advance();
 			self.print_stmt()
+		} else if self.current()? == &TokenType::Keyword(token_type::Keyword::While) {
+			self.advance();
+			self.while_stmt()
 		} else if self.current()?
 			== &TokenType::Punctuation(token_type::Punctuation::BracketCurlyOpen)
 		{
