@@ -81,8 +81,6 @@ pub enum Keyword {
 	Class,
 	If,
 	Else,
-	True,
-	False,
 	Function,
 	For,
 	While,
