@@ -4,10 +4,7 @@ use anyhow::Result;
 
 use super::{
 	super::lexer::tokens::token_type::Operator,
-	visitors::{
-		interp::{interpret_expr, interpret_stmt},
-		parens::parenthesize,
-	},
+	visitors::{interp::INTERPERTER, parens::parenthesize},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,25 +31,16 @@ pub enum Expr {
 	Grouping(Box<Expr>),
 	Literal(Literal),
 	Unary(Operator, Box<Expr>),
+	Variable(String),
 }
 impl Expr {
-	pub fn interpret(&self) -> Result<Literal> {
-		interpret_expr(self)
+	pub fn interpret(self) -> Result<Literal> {
+		let interp = INTERPERTER.lock().unwrap();
+		interp.expr(self)
 	}
 }
 impl fmt::Display for Expr {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "{}", &parenthesize(self))
-	}
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Stmt {
-	Expression(Expr),
-	Print(Expr),
-}
-impl Stmt {
-	pub fn interpret(&self) -> Result<Literal> {
-		interpret_stmt(self)
 	}
 }

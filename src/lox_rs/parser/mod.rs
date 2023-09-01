@@ -3,7 +3,10 @@ use std::iter::Peekable;
 use anyhow::{anyhow, bail, Ok, Result};
 
 use super::{
-	ast::expr::{Expr, Literal, Stmt},
+	ast::{
+		expr::{Expr, Literal},
+		stmt::Stmt,
+	},
 	lexer::tokens::{
 		token::Token,
 		token_type::{self, TokenType},
@@ -216,6 +219,12 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 				Ok(Expr::Grouping(Box::new(expr)))
 			}
+			TokenType::Identifier(ident) => {
+				let ident = String::from_utf8(ident.to_vec())?;
+				self.advance();
+
+				Ok(Expr::Variable(ident))
+			}
 			other => {
 				// FIXME: A result should be retruned here to not break flow
 				bail!("Unknown primary expression received: {:?}", &other)
@@ -247,11 +256,43 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			self.expr_stmt()
 		}
 	}
+	fn var_declaration(&mut self) -> Result<Stmt> {
+		if let &TokenType::Identifier(ident) = self.current()? {
+			let ident = String::from_utf8(ident.to_vec())?;
+			self.advance();
+
+			let mut var_init: Option<Expr> = None;
+			if let &TokenType::Operator(token_type::Operator::Eq) = self.current()? {
+				self.advance();
+				var_init = Some(self.expression()?);
+			}
+
+			self.assert_next(
+				&TokenType::Punctuation(token_type::Punctuation::Semicolon),
+				"Expected a `;` after the variable initialization",
+			)?;
+			Ok(Stmt::Var(ident, var_init))
+		} else {
+			bail!("Expected variable name here");
+		}
+	}
+	fn declaration(&mut self) -> Result<Stmt> {
+		let result = if self.current()? == &TokenType::Keyword(token_type::Keyword::Var) {
+			self.advance();
+			self.var_declaration()
+		} else {
+			self.statement()
+		};
+		if result.is_err() {
+			self.sync()?;
+		}
+		result
+	}
 
 	pub fn parse(&mut self) -> Result<(Vec<Stmt>, &[&'p str])> {
 		let mut statments = Vec::new();
 		while !self.is_at_end() {
-			statments.push(self.statement()?);
+			statments.push(self.declaration()?);
 		}
 
 		Ok((statments, &self.errors[..]))
