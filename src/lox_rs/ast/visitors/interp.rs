@@ -13,10 +13,10 @@ use super::super::super::{
 };
 
 #[derive(Default, Debug)]
-pub struct Interperter<'i> {
-	env: Env<'i>,
+pub struct Interperter {
+	env: Env,
 }
-impl<'i> Interperter<'i> {
+impl Interperter {
 	pub fn expr(&mut self, expr: Expr) -> Result<Literal> {
 		match expr {
 			Expr::Binary(left, op, right) => {
