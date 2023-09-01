@@ -7,7 +7,11 @@ use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Result};
 use clap::{self, Parser};
-use lox_rs::{lexer::scanner::scan, parser::Parser as ASTParser};
+use lox_rs::{
+	ast::visitors::interp::Interperter,
+	lexer::scanner::scan,
+	parser::Parser as ASTParser,
+};
 
 #[derive(Parser, Debug)]
 #[clap(about, version, author)]
@@ -31,6 +35,8 @@ fn main() -> Result<()> {
 		dump_ast,
 	} = Args::parse();
 
+	let mut interp = Interperter::default();
+
 	if let Some(filepath) = filepath {
 		let input = fs::read(filepath)?;
 		let input = scan(&input);
@@ -47,7 +53,7 @@ fn main() -> Result<()> {
 				println!("{:#?}", &stmt);
 			}
 			if !check_only {
-				if let Err(e) = stmt.interpret() {
+				if let Err(e) = stmt.interpret(&mut interp) {
 					eprintln!("{e}");
 				}
 			}
@@ -68,7 +74,7 @@ fn main() -> Result<()> {
 				println!("{:#?}", &stmt);
 			}
 			if !check_only {
-				if let Err(e) = stmt.interpret() {
+				if let Err(e) = stmt.interpret(&mut interp) {
 					eprintln!("{e}");
 				}
 			}

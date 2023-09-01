@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use super::{
 	expr::{Expr, Literal},
-	visitors::interp::INTERPERTER,
+	visitors::interp::Interperter,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -17,8 +17,7 @@ pub enum Stmt {
 	Function(String, Vec<Expr>, Box<Stmt>),
 }
 impl Stmt {
-	pub fn interpret(self) -> Result<Literal> {
-		let mut interp = INTERPERTER.lock().unwrap();
+	pub fn interpret(self, interp: &mut Interperter) -> Result<Literal> {
 		interp.stmt(self)
 	}
 }

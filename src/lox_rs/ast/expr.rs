@@ -4,8 +4,8 @@ use anyhow::Result;
 
 use super::{
 	super::lexer::tokens::token_type::{Operator, Punctuation},
-	callables::callable::Callable,
-	visitors::{interp::INTERPERTER, parens::parenthesize},
+	callables::{custom_fn::CustomFn, native_fn::NativeFn},
+	visitors::{interp::Interperter, parens::parenthesize},
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -13,7 +13,8 @@ pub enum Literal {
 	Number(f64),
 	String(String),
 	Boolean(bool),
-	Function(Callable),
+	NativeFunction(NativeFn),
+	CustomFunction(CustomFn),
 	#[default]
 	Null,
 }
@@ -23,8 +24,9 @@ impl Literal {
 			Self::Number(n) => *n != 0.,
 			Self::String(s) => !s.is_empty(),
 			Self::Boolean(b) => *b,
+			Literal::CustomFunction(_) => true,
+			Literal::NativeFunction(_) => true,
 			Self::Null => false,
-			Literal::Function(_) => true,
 		}
 	}
 }
@@ -34,8 +36,9 @@ impl fmt::Display for Literal {
 			Literal::Number(n) => write!(f, "{n}"),
 			Literal::String(s) => write!(f, "\"{s}\""),
 			Literal::Boolean(b) => write!(f, "{b}"),
+			Literal::CustomFunction(func) => write!(f, "{func:?}"),
+			Literal::NativeFunction(func) => write!(f, "{func:?}"),
 			Literal::Null => write!(f, "null"),
-			Literal::Function(func) => write!(f, "{func}"),
 		}
 	}
 }
@@ -52,8 +55,7 @@ pub enum Expr {
 	Logical(Box<Expr>, Operator, Box<Expr>),
 }
 impl Expr {
-	pub fn interpret(self) -> Result<Literal> {
-		let mut interp = INTERPERTER.lock().unwrap();
+	pub fn interpret(self, interp: &mut Interperter) -> Result<Literal> {
 		interp.expr(self)
 	}
 }
