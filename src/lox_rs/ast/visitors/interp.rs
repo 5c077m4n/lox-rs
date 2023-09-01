@@ -193,6 +193,39 @@ impl Interperter {
 				}
 				Ok(Literal::Null)
 			}
+			Stmt::For(initializer, condition, increment, block) => {
+				let mut init_param_name: Option<String> = None;
+				if let Some(initializer) = initializer {
+					if let Stmt::Var(ref name, _) = *initializer {
+						init_param_name = Some(name.clone());
+						self.stmt(*initializer)?;
+					} else {
+						bail!("This should be a loop interator initializer")
+					}
+				}
+
+				let block = Box::new(Stmt::Block({
+					let mut stmts: Vec<Stmt> = Vec::new();
+
+					stmts.push(*block);
+					if let Some(increment) = increment {
+						stmts.push(Stmt::Expression(increment));
+					}
+					stmts
+				}));
+				while condition
+					.clone()
+					.map_or(true, |expr| self.expr(expr).unwrap().is_truthy())
+				{
+					let block = block.clone();
+					self.stmt(*block)?;
+				}
+				if let Some(init_param_name) = init_param_name {
+					self.env.remove(&init_param_name);
+				}
+
+				Ok(Literal::Null)
+			}
 		}
 	}
 }

@@ -13,6 +13,7 @@ pub enum Stmt {
 	Block(Vec<Stmt>),
 	If(Expr, Box<Stmt>, Option<Box<Stmt>>),
 	While(Expr, Box<Stmt>),
+	For(Option<Box<Stmt>>, Option<Expr>, Option<Expr>, Box<Stmt>),
 }
 impl Stmt {
 	pub fn interpret(self) -> Result<Literal> {

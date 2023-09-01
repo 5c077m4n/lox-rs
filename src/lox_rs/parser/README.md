@@ -17,14 +17,15 @@
 
 ## Statements
 
-| name        | value                                                   |
-| ----------- | ------------------------------------------------------- |
-| program     | ( statement )\* EOF                                     |
-| declaration | varDecl \| statement                                    |
-| statement   | exprStmt \| printStmt \| ifStmt \| block \| whileStmt   |
-| whileStmt   | `while` `(` expression `)` statment                     |
-| block       | `{` ( declaration )\* `}`                               |
-| exprStmt    | expression `;`                                          |
-| printStmt   | `print` expression `;`                                  |
-| varDecl     | `var` IDENTIFIER ( `=` expression )? `;`                |
-| ifStmt      | `if` `(` expression `)` statement ( `else` statement )? |
+| name        | value                                                                                     |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| program     | ( statement )\* EOF                                                                       |
+| declaration | varDecl \| statement                                                                      |
+| statement   | exprStmt \| printStmt \| ifStmt \| block \| whileStmt \| forStmt                          |
+| whileStmt   | `while` `(` expression `)` statment                                                       |
+| forStmt     | `for` `(` ( varDecl \| exprStmt \| `;` ) ( expression )? `;` ( expression )? `)` statment |
+| block       | `{` ( declaration )\* `}`                                                                 |
+| exprStmt    | expression `;`                                                                            |
+| printStmt   | `print` expression `;`                                                                    |
+| varDecl     | `var` IDENTIFIER ( `=` expression )? `;`                                                  |
+| ifStmt      | `if` `(` expression `)` statement ( `else` statement )?                                   |

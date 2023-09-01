@@ -45,4 +45,7 @@ impl Env {
 			bail!("{} was not initiated yet", &name);
 		}
 	}
+	pub fn remove(&mut self, key: &str) -> Option<Literal> {
+		self.values.remove(key)
+	}
 }
