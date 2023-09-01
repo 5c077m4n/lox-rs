@@ -3,7 +3,7 @@ use std::iter::Peekable;
 use anyhow::{anyhow, bail, Ok, Result};
 
 use super::{
-	ast::expr::{Expr, Literal},
+	ast::expr::{Expr, Literal, Stmt},
 	lexer::tokens::{
 		token::Token,
 		token_type::{self, TokenType},
@@ -46,6 +46,9 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	fn advance(&mut self) {
 		if let Some(token) = self.tokens.next() {
 			self.history.push(token);
+		} else {
+			self.history
+				.push(Token::new(token_type::TokenType::EndOfFile, 0, 0))
 		}
 	}
 	/// Get current token
@@ -58,7 +61,8 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	}
 	/// Check if the current token is of a give type
 	fn check(&self, token: &TokenType) -> Result<bool> {
-		Ok(!self.is_at_end() && self.current()? == token)
+		let is_ok = !self.is_at_end() && self.current()? == token;
+		Ok(is_ok)
 	}
 	/// Match the current token against a given list and advance the index only if there is a match
 	fn match_type(&mut self, types: &'p [&TokenType]) -> Result<Option<&TokenType>> {
@@ -69,6 +73,38 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			}
 		}
 		Ok(None)
+	}
+	fn assert_next(&mut self, expected: &TokenType, err_msg: &'p str) -> Result<()> {
+		if self.check(expected)? {
+			self.advance();
+		} else {
+			bail!("{}", err_msg);
+		}
+		Ok(())
+	}
+	fn sync(&mut self) -> Result<()> {
+		use token_type::{Keyword, Punctuation};
+
+		self.advance();
+
+		while !self.is_at_end() {
+			let prev = self.prev()?;
+			let current = self.current()?;
+
+			if prev != &TokenType::Punctuation(Punctuation::Semicolon)
+				&& current != &TokenType::Keyword(Keyword::Class)
+				&& current != &TokenType::Keyword(Keyword::Function)
+				&& current != &TokenType::Keyword(Keyword::Var)
+				&& current != &TokenType::Keyword(Keyword::For)
+				&& current != &TokenType::Keyword(Keyword::If)
+				&& current != &TokenType::Keyword(Keyword::While)
+				&& current != &TokenType::Keyword(Keyword::Print)
+				&& current != &TokenType::Keyword(Keyword::Return)
+			{
+				self.advance();
+			}
+		}
+		Ok(())
 	}
 
 	fn expression(&mut self) -> Result<Expr> {
@@ -173,7 +209,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 				self.advance();
 
 				let expr = self.expression()?;
-				self.consume(
+				self.assert_next(
 					&TokenType::Punctuation(token_type::Punctuation::BracketClose),
 					"Expected a `)` after the expression",
 				)?;
@@ -182,44 +218,43 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 			}
 			other => {
 				// FIXME: A result should be retruned here to not break flow
-				bail!("Unknown primary expression received, but got {:?}", &other)
+				bail!("Unknown primary expression received: {:?}", &other)
 			}
 		}
 	}
-	fn consume(&mut self, until_token: &TokenType, err_msg: &'p str) -> Result<()> {
-		if self.check(until_token)? {
+
+	fn print_stmt(&mut self) -> Result<Stmt> {
+		let expr = self.expression()?;
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::Semicolon),
+			"Expected a `;` after the print value",
+		)?;
+		Ok(Stmt::Print(expr))
+	}
+	fn expr_stmt(&mut self) -> Result<Stmt> {
+		let expr = self.expression()?;
+		self.assert_next(
+			&TokenType::Punctuation(token_type::Punctuation::Semicolon),
+			"Expected a `;` after the value",
+		)?;
+		Ok(Stmt::Expression(expr))
+	}
+	fn statement(&mut self) -> Result<Stmt> {
+		if self.current()? == &TokenType::Keyword(token_type::Keyword::Print) {
 			self.advance();
+			self.print_stmt()
 		} else {
-			self.errors.push(err_msg);
+			self.expr_stmt()
 		}
-		Ok(())
 	}
-	fn sync(&mut self) -> Result<()> {
-		use token_type::{Keyword, Punctuation};
 
-		self.advance();
-
+	pub fn parse(&mut self) -> Result<(Vec<Stmt>, &[&'p str])> {
+		let mut statments = Vec::new();
 		while !self.is_at_end() {
-			let prev = self.prev()?;
-			let current = self.current()?;
-
-			if prev != &TokenType::Punctuation(Punctuation::Semicolon)
-				&& current != &TokenType::Keyword(Keyword::Class)
-				&& current != &TokenType::Keyword(Keyword::Function)
-				&& current != &TokenType::Keyword(Keyword::Var)
-				&& current != &TokenType::Keyword(Keyword::For)
-				&& current != &TokenType::Keyword(Keyword::If)
-				&& current != &TokenType::Keyword(Keyword::While)
-				&& current != &TokenType::Keyword(Keyword::Print)
-				&& current != &TokenType::Keyword(Keyword::Return)
-			{
-				self.advance();
-			}
+			statments.push(self.statement()?);
 		}
-		Ok(())
-	}
-	pub fn parse(&mut self) -> Result<(Expr, &[&'p str])> {
-		self.expression().map(|expr| (expr, &self.errors[..]))
+
+		Ok((statments, &self.errors[..]))
 	}
 }
 

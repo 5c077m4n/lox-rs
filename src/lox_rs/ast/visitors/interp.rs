@@ -1,15 +1,15 @@
 use anyhow::{bail, Result};
 
 use super::super::super::{
-	ast::expr::{Expr, Literal},
+	ast::expr::{Expr, Literal, Stmt},
 	lexer::tokens::token_type::Operator,
 };
 
-pub fn interp(expr: &Expr) -> Result<Literal> {
+pub fn interpret_expr(expr: &Expr) -> Result<Literal> {
 	match expr {
 		Expr::Binary(left, op, right) => {
-			let left = interp(left)?;
-			let right = interp(right)?;
+			let left = interpret_expr(left)?;
+			let right = interpret_expr(right)?;
 
 			let new_lit = match op {
 				Operator::NotEq => Literal::Boolean(left != right),
@@ -69,10 +69,10 @@ pub fn interp(expr: &Expr) -> Result<Literal> {
 			};
 			Ok(new_lit)
 		}
-		Expr::Grouping(expr) => interp(expr),
+		Expr::Grouping(expr) => interpret_expr(expr),
 		Expr::Literal(lit) => Ok(lit.clone()),
 		Expr::Unary(op, right) => {
-			let right = interp(right)?;
+			let right = interpret_expr(right)?;
 
 			let new_lit = match op {
 				Operator::Add => match right {
@@ -144,6 +144,18 @@ pub fn interp(expr: &Expr) -> Result<Literal> {
 				other => unreachable!("Should not get {:?} as an unary op", &other),
 			};
 			Ok(new_lit)
+		}
+	}
+}
+
+pub fn interpret_stmt(stmt: &Stmt) -> Result<Literal> {
+	match stmt {
+		Stmt::Expression(e) => interpret_expr(e),
+		Stmt::Print(e) => {
+			let result = interpret_expr(e)?;
+			println!("{:?}", &result);
+
+			Ok(Literal::Null)
 		}
 	}
 }
