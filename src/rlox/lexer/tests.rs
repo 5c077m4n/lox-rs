@@ -1,12 +1,11 @@
 use anyhow::Result;
 
 use super::{
-	super::lexer::tokens::token_type::{Keyword, TokenType},
+	super::lexer::tokens::{
+		token::Token,
+		token_type::{Keyword, Literal, Operator, TokenType},
+	},
 	scanner::scan,
-};
-use crate::lib::lexer::tokens::{
-	token::Token,
-	token_type::{Literal, Operator},
 };
 
 #[test]
