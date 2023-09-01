@@ -9,7 +9,6 @@ use super::{
 };
 
 #[test]
-#[ignore = "need to finalize parser"]
 fn sanity() -> Result<()> {
 	let input = b"null";
 	let input = scan(input);

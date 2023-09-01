@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Ok, Result};
 
 use super::{
 	ast::expr::{Expr, Literal},
@@ -17,14 +17,16 @@ pub struct Parser<'p, I: Iterator<Item = Token<'p>>> {
 }
 impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	pub fn new(tokens: Box<Peekable<I>>) -> Self {
-		Parser {
+		let mut parser = Parser {
 			tokens,
 			history: Vec::new(),
 			errors: Vec::new(),
-		}
+		};
+		parser.advance();
+		parser
 	}
 	fn get_token_at(&self, rel: usize) -> Result<&TokenType> {
-		let pos = self.history.len().saturating_sub(rel);
+		let pos = self.history.len().saturating_sub(rel).saturating_sub(1);
 		let token = self
 			.history
 			.get(pos)
@@ -40,11 +42,10 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		}
 	}
 	/// Advance the current index if not at the EOF yet
-	fn advance(&mut self) -> Result<()> {
+	fn advance(&mut self) {
 		if let Some(token) = self.tokens.next() {
 			self.history.push(token);
 		}
-		Ok(())
 	}
 	/// Get current token
 	fn current(&self) -> Result<&TokenType> {
@@ -62,7 +63,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	fn match_type(&mut self, types: &'p [&TokenType]) -> Result<Option<&TokenType>> {
 		for t in types {
 			if self.check(t)? {
-				self.advance()?;
+				self.advance();
 				return Ok(Some(t));
 			}
 		}
@@ -73,52 +74,45 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 		self.equality()
 	}
 	fn equality(&mut self) -> Result<Expr> {
+		use token_type::Operator;
+
 		let mut expr = self.comparison()?;
 
-		while let Some(op) = self.tokens.next() {
-			use token_type::Operator;
+		while let TokenType::Operator(op @ (Operator::EqEq | Operator::NotEq)) = self.current()? {
+			let op = op.clone();
+			self.advance();
 
-			match op.get() {
-				TokenType::Operator(op @ (Operator::EqEq | Operator::NotEq)) => {
-					let op = op.clone();
-					let right = self.comparison()?;
+			let right = self.comparison()?;
 
-					expr = Expr::Binary {
-						left: Box::new(expr),
-						op,
-						right: Box::new(right),
-					};
-				}
-				_ => unreachable!("How did I get here?"),
-			}
+			expr = Expr::Binary {
+				left: Box::new(expr),
+				op,
+				right: Box::new(right),
+			};
 		}
 		Ok(expr)
 	}
 	fn comparison(&mut self) -> Result<Expr> {
+		use token_type::Operator;
+
 		let mut expr = self.term()?;
 
-		while let Some(op) = self.tokens.next() {
-			use token_type::Operator;
+		while let TokenType::Operator(
+			op @ (Operator::Gt | Operator::Gte | Operator::Lt | Operator::Lte),
+		) = self.current()?
+		{
+			let op = op.clone();
+			self.advance();
 
-			match op.get() {
-				TokenType::Operator(
-					op @ (Operator::Gt | Operator::Gte | Operator::Lt | Operator::Lte),
-				) => {
-					let op = op.clone();
-					let right = self.term()?;
+			let right = self.term()?;
 
-					expr = Expr::Binary {
-						left: Box::new(expr),
-						op,
-						right: Box::new(right),
-					};
-				}
-				other => unreachable!(
-					"The token should be '>', '>=', '<', or '<=', but got {:?}",
-					&other
-				),
-			}
+			expr = Expr::Binary {
+				left: Box::new(expr),
+				op,
+				right: Box::new(right),
+			};
 		}
+
 		Ok(expr)
 	}
 	fn term(&mut self) -> Result<Expr> {
@@ -126,90 +120,76 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 		let mut expr = self.factor()?;
 
-		while let Some(op) = self.tokens.next() {
-			match op.get() {
-				TokenType::Operator(op @ (Operator::Add | Operator::Sub)) => {
-					let op = op.clone();
-					let right = self.factor()?;
+		while let TokenType::Operator(op @ (Operator::Add | Operator::Sub)) = self.current()? {
+			let op = op.clone();
+			self.advance();
 
-					expr = Expr::Binary {
-						left: Box::new(expr),
-						op,
-						right: Box::new(right),
-					};
-				}
-				other => {
-					unreachable!("The token should be '+' or '-', but got {:?}", &other)
-				}
-			}
+			let right = self.factor()?;
+
+			expr = Expr::Binary {
+				left: Box::new(expr),
+				op,
+				right: Box::new(right),
+			};
 		}
 		Ok(expr)
 	}
 	fn factor(&mut self) -> Result<Expr> {
+		use token_type::Operator;
+
 		let mut expr = self.unary()?;
 
-		while let Some(op) = self.tokens.next() {
-			use token_type::Operator;
+		while let TokenType::Operator(op @ (Operator::Mul | Operator::Div)) = self.current()? {
+			let op = op.clone();
+			self.advance();
 
-			if let TokenType::Operator(op @ (Operator::Mul | Operator::Div)) = op.get() {
-				let op = op.clone();
-				let right = self.unary()?;
+			let right = self.unary()?;
 
-				expr = Expr::Binary {
-					left: Box::new(expr),
-					op,
-					right: Box::new(right),
-				};
-			} else {
-				unreachable!("The token should be '*' or '/' - tested above")
-			}
+			expr = Expr::Binary {
+				left: Box::new(expr),
+				op,
+				right: Box::new(right),
+			};
 		}
 		Ok(expr)
 	}
 	fn unary(&mut self) -> Result<Expr> {
-		if let Some(op) = self.tokens.next() {
-			use token_type::Operator;
+		use token_type::Operator;
 
-			match op.get() {
-				TokenType::Operator(op @ (Operator::Not | Operator::Sub | Operator::Add)) => {
-					let op = op.clone();
-					let right = self.unary()?;
+		if let TokenType::Operator(op @ (Operator::Not | Operator::Sub | Operator::Add)) =
+			self.current()?
+		{
+			let op = op.clone();
+			self.advance();
 
-					Ok(Expr::Unary {
-						op,
-						right: Box::new(right),
-					})
-				}
-				other => {
-					unreachable!(
-						"The token should be an unary '!', '-', or '+', but got {:?}",
-						&other
-					)
-				}
-			}
+			let right = self.unary()?;
+
+			Ok(Expr::Unary {
+				op,
+				right: Box::new(right),
+			})
 		} else {
 			self.primary()
 		}
 	}
 	fn primary(&mut self) -> Result<Expr> {
-		let token = match self.tokens.next() {
-			Some(token) => token.get().to_owned(),
-			_ => bail!("Expression expected here"),
-		};
-
-		match token {
+		match self.current()? {
 			TokenType::Literal(lit) => {
 				let value = match lit {
 					token_type::Literal::String(v) => {
 						Literal::String(String::from_utf8(v.to_vec())?)
 					}
-					token_type::Literal::Number(v) => Literal::Number(v),
-					token_type::Literal::Boolean(v) => Literal::Boolean(v),
+					token_type::Literal::Number(v) => Literal::Number(*v),
+					token_type::Literal::Boolean(v) => Literal::Boolean(*v),
 					token_type::Literal::Null => Literal::Null,
 				};
+
+				self.advance();
 				Ok(Expr::Literal { value })
 			}
 			TokenType::Punctuation(token_type::Punctuation::BracketOpen) => {
+				self.advance();
+
 				let expr = self.expression()?;
 				self.consume(
 					&TokenType::Punctuation(token_type::Punctuation::BracketClose),
@@ -228,36 +208,38 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 	}
 	fn consume(&mut self, until_token: &TokenType, err_msg: &'p str) -> Result<()> {
 		if self.check(until_token)? {
-			self.advance()?;
+			self.advance();
 		} else {
 			self.errors.push(err_msg);
 		}
 		Ok(())
 	}
 	fn sync(&mut self) -> Result<()> {
-		self.advance()?;
+		use token_type::{Keyword, Punctuation};
+
+		self.advance();
 
 		while !self.is_at_end() {
 			let prev = self.prev()?;
 			let current = self.current()?;
 
-			if prev != &TokenType::Punctuation(token_type::Punctuation::Semicolon)
-				&& current != &TokenType::Keyword(token_type::Keyword::Class)
-				&& current != &TokenType::Keyword(token_type::Keyword::Function)
-				&& current != &TokenType::Keyword(token_type::Keyword::Var)
-				&& current != &TokenType::Keyword(token_type::Keyword::For)
-				&& current != &TokenType::Keyword(token_type::Keyword::If)
-				&& current != &TokenType::Keyword(token_type::Keyword::While)
-				&& current != &TokenType::Keyword(token_type::Keyword::Print)
-				&& current != &TokenType::Keyword(token_type::Keyword::Return)
+			if prev != &TokenType::Punctuation(Punctuation::Semicolon)
+				&& current != &TokenType::Keyword(Keyword::Class)
+				&& current != &TokenType::Keyword(Keyword::Function)
+				&& current != &TokenType::Keyword(Keyword::Var)
+				&& current != &TokenType::Keyword(Keyword::For)
+				&& current != &TokenType::Keyword(Keyword::If)
+				&& current != &TokenType::Keyword(Keyword::While)
+				&& current != &TokenType::Keyword(Keyword::Print)
+				&& current != &TokenType::Keyword(Keyword::Return)
 			{
-				self.advance()?;
+				self.advance();
 			}
 		}
 		Ok(())
 	}
-	pub fn parse(&mut self) -> Result<(Expr, &Vec<&'p str>)> {
-		self.expression().map(|expr| (expr, &self.errors))
+	pub fn parse(&mut self) -> Result<(Expr, &[&'p str])> {
+		self.expression().map(|expr| (expr, &self.errors[..]))
 	}
 }
 
