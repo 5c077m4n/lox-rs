@@ -14,10 +14,12 @@ use super::super::{
 	},
 	callables::builtins::CLOCK,
 };
+use crate::lox_rs::ast::callables::callable::Callable;
 
 #[derive(Debug)]
 pub struct Interperter {
-	env: Env,
+	pub global: Env,
+	pub local: Env,
 }
 impl Interperter {
 	pub fn expr(&mut self, expr: Expr) -> Result<Literal> {
@@ -133,10 +135,14 @@ impl Interperter {
 				};
 				Ok(new_lit)
 			}
-			Expr::Variable(name) => self.env.get(name).cloned(),
+			Expr::Variable(name) => self
+				.local
+				.get(name.clone())
+				.or_else(|_| self.global.get(name))
+				.cloned(),
 			Expr::Assign(name, value) => {
 				let value = self.expr(*value)?;
-				self.env.redefine(name, value)?;
+				self.local.redefine(name, value)?;
 
 				Ok(Literal::Null)
 			}
@@ -152,26 +158,18 @@ impl Interperter {
 			}
 			Expr::Call(callee, _paren, args) => {
 				let callee = self.expr(*callee)?;
+				let args_as_lit: Vec<Literal> =
+					args.iter().map(|a| self.expr(a.clone()).unwrap()).collect();
 
-				let mut args_as_lit: Vec<Literal> = Vec::with_capacity(args.len());
-				for arg in args.iter() {
-					let arg = self.expr(arg.clone())?;
-					args_as_lit.push(arg);
-				}
-
-				if let Literal::Function(func) = &callee {
-					if func.arity() < args_as_lit.len() {
-						bail!("Too many args into {:?}", &func);
-					}
-					func.call(args_as_lit)
-				} else {
+				let Literal::Function(func) = &callee else {
 					bail!("Unexpected type for the callee, {:?}", &callee);
-				}
+				};
+				func.call(self, args_as_lit)
 			}
 		}
 	}
 	pub fn stmt(&mut self, stmt: Stmt) -> Result<Literal> {
-		log::debug!("{:?}", &self.env);
+		log::debug!("{:?}", &self.local);
 
 		match stmt {
 			Stmt::Expression(e) => self.expr(e),
@@ -184,22 +182,22 @@ impl Interperter {
 			Stmt::Var(name, value) => {
 				if let Some(value) = value {
 					let value = self.expr(value)?;
-					self.env.define(name, value.clone());
+					self.local.define(name, value.clone());
 
 					Ok(value)
 				} else {
-					self.env.define(name, Literal::Null);
+					self.local.define(name, Literal::Null);
 					Ok(Literal::Null)
 				}
 			}
 			Stmt::Block(statements) => {
-				let prev_env = self.env.clone();
-				self.env = Env::new(Box::new(prev_env));
+				let prev_env = self.local.clone();
+				self.local = Env::new(Box::new(prev_env));
 
 				for statement in statements {
 					self.stmt(statement)?;
 				}
-				self.env = *self.env.get_parent().unwrap();
+				self.local = *self.local.get_parent().unwrap();
 
 				Ok(Literal::Null)
 			}
@@ -239,30 +237,52 @@ impl Interperter {
 				}));
 				while condition
 					.clone()
-					.map_or(true, |expr| self.expr(expr).unwrap().is_truthy())
+					.map_or_else(|| Ok(Literal::Null), |expr| self.expr(expr))?
+					.is_truthy()
 				{
 					let block = block.clone();
 					self.stmt(*block)?;
 				}
 				if let Some(init_param_name) = init_param_name {
-					self.env.remove(&init_param_name);
+					self.local.remove(&init_param_name);
 				}
 
 				Ok(Literal::Null)
 			}
-			Stmt::Function(_name, _inputs, _block) => bail!("[TODO] Function statement"),
+			Stmt::Function(name, inputs, block) => {
+				let inputs: Vec<_> = inputs.iter().map(|p| self.expr(p.clone())).collect();
+				let block = self.stmt(*block)?;
+
+				let fn_str = &format!(
+					r"function {}({:?}) {{
+                        {}
+                    }}",
+					&name, &inputs, &block
+				);
+
+				self.local.define(
+					name.clone(),
+					Literal::Function(Callable::new(inputs.len(), fn_str, |_inputs| {
+						Ok(Literal::Null)
+					})),
+				);
+
+				Ok(Literal::Null)
+			}
 		}
 	}
 }
+
 impl Default for Interperter {
 	fn default() -> Self {
-		let globals = {
+		let global = {
 			let mut g = Env::default();
 			g.define("clock".to_owned(), Literal::Function(CLOCK));
-			Box::new(g)
+			g
 		};
 		Self {
-			env: Env::new(globals),
+			global,
+			local: Env::default(),
 		}
 	}
 }
