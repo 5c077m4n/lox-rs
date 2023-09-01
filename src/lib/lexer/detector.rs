@@ -61,7 +61,7 @@ pub fn detect_keyword(input: &[u8]) -> IResult<&[u8], Keyword> {
 		value(Keyword::Function, tag(b"fn")),
 		value(Keyword::For, tag(b"for")),
 		value(Keyword::While, tag(b"while")),
-		value(Keyword::Nil, tag(b"nil")),
+		value(Keyword::Null, tag(b"null")),
 		value(Keyword::Print, tag(b"print")),
 		value(Keyword::Return, tag(b"return")),
 		value(Keyword::Super, tag(b"super")),
