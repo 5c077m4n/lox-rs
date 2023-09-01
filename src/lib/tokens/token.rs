@@ -3,7 +3,7 @@ use std::fmt;
 use super::token_type::TokenType;
 
 pub struct Token<'t> {
-	token_type: TokenType,
+	token_type: TokenType<'t>,
 	lexme: &'t str,
 	// literal: _,
 	line: usize,
@@ -11,7 +11,7 @@ pub struct Token<'t> {
 }
 
 impl<'t> Token<'t> {
-	pub fn new(token_type: TokenType, lexme: &'t str, line: usize, column: usize) -> Self {
+	pub fn new(token_type: TokenType<'t>, lexme: &'t str, line: usize, column: usize) -> Self {
 		Self {
 			token_type,
 			lexme,
