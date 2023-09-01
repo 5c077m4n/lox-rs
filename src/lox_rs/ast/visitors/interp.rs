@@ -253,15 +253,14 @@ impl Interperter {
 				let inputs: Vec<_> = inputs.iter().map(|p| self.expr(p.clone())).collect();
 				let block = self.stmt(*block)?;
 
-				let fn_str = &format!(
-					r"function {}({:?}) {{
-                        {}
-                    }}",
-					&name, &inputs, &block
+				let fn_str = format!(
+					r"function {name}({inputs:?}) {{
+                        {block}
+                    }}"
 				);
 
 				self.local.define(
-					name.clone(),
+					name,
 					Literal::Function(Callable::new(inputs.len(), fn_str, |_inputs| {
 						Ok(Literal::Null)
 					})),
@@ -277,7 +276,10 @@ impl Default for Interperter {
 	fn default() -> Self {
 		let global = {
 			let mut g = Env::default();
-			g.define("clock".to_owned(), Literal::Function(CLOCK));
+			g.define(
+				"clock".to_owned(),
+				Literal::Function(CLOCK.lock().unwrap().to_owned()),
+			);
 			g
 		};
 		Self {

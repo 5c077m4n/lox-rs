@@ -31,11 +31,11 @@ impl Literal {
 impl fmt::Display for Literal {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
-			Literal::Number(n) => write!(f, "{}", n),
-			Literal::String(s) => write!(f, "\"{}\"", s),
-			Literal::Boolean(b) => write!(f, "{}", b),
+			Literal::Number(n) => write!(f, "{n}"),
+			Literal::String(s) => write!(f, "\"{s}\""),
+			Literal::Boolean(b) => write!(f, "{b}"),
 			Literal::Null => write!(f, "null"),
-			Literal::Function(func) => write!(f, "{}", func),
+			Literal::Function(func) => write!(f, "{func}"),
 		}
 	}
 }
