@@ -58,14 +58,14 @@ impl<'p> Parser<'p> {
 		Ok(self.peek()? == token)
 	}
 	/// Match the current token against a given list and advance the index only if there is a match
-	fn match_type(&mut self, types: &'p [&TokenType]) -> Option<&TokenType> {
+	fn match_type(&mut self, types: &'p [&TokenType]) -> Result<Option<&TokenType>> {
 		for t in types {
-			if self.check(t).unwrap() {
-				self.advance().unwrap();
-				return Some(t);
+			if self.check(t)? {
+				self.advance()?;
+				return Ok(Some(t));
 			}
 		}
-		None
+		Ok(None)
 	}
 	fn get_op_token(&self) -> Result<&Operator> {
 		match self.peek()? {
@@ -83,7 +83,7 @@ impl<'p> Parser<'p> {
 		while let Some(op) = self.match_type(&[
 			&TokenType::Operator(Operator::EqEq),
 			&TokenType::Operator(Operator::NotEq),
-		]) {
+		])? {
 			if let TokenType::Operator(op) = op {
 				let op = op.clone();
 				let right = self.comparison()?;
@@ -107,7 +107,7 @@ impl<'p> Parser<'p> {
 			&TokenType::Operator(Operator::Gte),
 			&TokenType::Operator(Operator::Lt),
 			&TokenType::Operator(Operator::Lte),
-		]) {
+		])? {
 			if let TokenType::Operator(op) = op {
 				let op = op.clone();
 				let right = self.term()?;
@@ -129,7 +129,7 @@ impl<'p> Parser<'p> {
 		while let Some(op) = self.match_type(&[
 			&TokenType::Operator(Operator::Sub),
 			&TokenType::Operator(Operator::Add),
-		]) {
+		])? {
 			if let TokenType::Operator(op) = op {
 				let op = op.clone();
 				let right = self.factor()?;
@@ -151,7 +151,7 @@ impl<'p> Parser<'p> {
 		while let Some(op) = self.match_type(&[
 			&TokenType::Operator(Operator::Mul),
 			&TokenType::Operator(Operator::Div),
-		]) {
+		])? {
 			if let TokenType::Operator(op) = op {
 				let op = op.clone();
 				let right = self.unary()?;
@@ -171,7 +171,7 @@ impl<'p> Parser<'p> {
 		if let Some(op) = self.match_type(&[
 			&TokenType::Operator(Operator::Not),
 			&TokenType::Operator(Operator::Sub),
-		]) {
+		])? {
 			if let TokenType::Operator(op) = op {
 				let op = op.clone();
 				let right = self.unary()?;
@@ -207,7 +207,7 @@ impl<'p> Parser<'p> {
 
 			lit
 		} else if let Some(_token) =
-			self.match_type(&[&TokenType::Punctuation(Punctuation::BracketOpen)])
+			self.match_type(&[&TokenType::Punctuation(Punctuation::BracketOpen)])?
 		{
 			let expr = self.expression()?;
 			self.consume(
