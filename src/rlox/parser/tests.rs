@@ -17,12 +17,7 @@ fn sanity() -> Result<()> {
 	let (tree, errors) = parser.parse()?;
 
 	assert!(errors.is_empty());
-	assert_eq!(
-		tree,
-		Expr::Literal {
-			value: Literal::Null
-		}
-	);
+	assert_eq!(tree, Expr::Literal(Literal::Null));
 
 	Ok(())
 }
@@ -38,15 +33,11 @@ fn one_plus_one() -> Result<()> {
 	assert!(errors.is_empty());
 	assert_eq!(
 		tree,
-		Expr::Binary {
-			left: Box::new(Expr::Literal {
-				value: Literal::Number(1.)
-			}),
-			op: Operator::Add,
-			right: Box::new(Expr::Literal {
-				value: Literal::Number(1.)
-			}),
-		}
+		Expr::Binary(
+			Box::new(Expr::Literal(Literal::Number(1.))),
+			Operator::Add,
+			Box::new(Expr::Literal(Literal::Number(1.))),
+		)
 	);
 
 	Ok(())
@@ -63,21 +54,15 @@ fn one_plus_one_mul_one() -> Result<()> {
 	assert!(errors.is_empty());
 	assert_eq!(
 		tree,
-		Expr::Binary {
-			left: Box::new(Expr::Literal {
-				value: Literal::Number(1.)
-			}),
-			op: Operator::Add,
-			right: Box::new(Expr::Binary {
-				left: Box::new(Expr::Literal {
-					value: Literal::Number(1.)
-				}),
-				op: Operator::Mul,
-				right: Box::new(Expr::Literal {
-					value: Literal::Number(1.)
-				})
-			}),
-		}
+		Expr::Binary(
+			Box::new(Expr::Literal(Literal::Number(1.))),
+			Operator::Add,
+			Box::new(Expr::Binary(
+				Box::new(Expr::Literal(Literal::Number(1.))),
+				Operator::Mul,
+				Box::new(Expr::Literal(Literal::Number(1.)))
+			)),
+		)
 	);
 
 	Ok(())

@@ -84,11 +84,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 			let right = self.comparison()?;
 
-			expr = Expr::Binary {
-				left: Box::new(expr),
-				op,
-				right: Box::new(right),
-			};
+			expr = Expr::Binary(Box::new(expr), op, Box::new(right));
 		}
 		Ok(expr)
 	}
@@ -106,11 +102,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 			let right = self.term()?;
 
-			expr = Expr::Binary {
-				left: Box::new(expr),
-				op,
-				right: Box::new(right),
-			};
+			expr = Expr::Binary(Box::new(expr), op, Box::new(right));
 		}
 
 		Ok(expr)
@@ -126,11 +118,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 			let right = self.factor()?;
 
-			expr = Expr::Binary {
-				left: Box::new(expr),
-				op,
-				right: Box::new(right),
-			};
+			expr = Expr::Binary(Box::new(expr), op, Box::new(right));
 		}
 		Ok(expr)
 	}
@@ -145,11 +133,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 			let right = self.unary()?;
 
-			expr = Expr::Binary {
-				left: Box::new(expr),
-				op,
-				right: Box::new(right),
-			};
+			expr = Expr::Binary(Box::new(expr), op, Box::new(right));
 		}
 		Ok(expr)
 	}
@@ -164,10 +148,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 
 			let right = self.unary()?;
 
-			Ok(Expr::Unary {
-				op,
-				right: Box::new(right),
-			})
+			Ok(Expr::Unary(op, Box::new(right)))
 		} else {
 			self.primary()
 		}
@@ -185,7 +166,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 				};
 
 				self.advance();
-				Ok(Expr::Literal { value })
+				Ok(Expr::Literal(value))
 			}
 			TokenType::Punctuation(token_type::Punctuation::BracketOpen) => {
 				self.advance();
@@ -196,9 +177,7 @@ impl<'p, I: Iterator<Item = Token<'p>>> Parser<'p, I> {
 					"Expected a `)` after the expression",
 				)?;
 
-				Ok(Expr::Grouping {
-					expr: Box::new(expr),
-				})
+				Ok(Expr::Grouping(Box::new(expr)))
 			}
 			other => {
 				// FIXME: A result should be retruned here to not break flow

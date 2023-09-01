@@ -22,21 +22,10 @@ impl fmt::Display for Literal {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-	Binary {
-		left: Box<Expr>,
-		op: Operator,
-		right: Box<Expr>,
-	},
-	Grouping {
-		expr: Box<Expr>,
-	},
-	Literal {
-		value: Literal,
-	},
-	Unary {
-		op: Operator,
-		right: Box<Expr>,
-	},
+	Binary(Box<Expr>, Operator, Box<Expr>),
+	Grouping(Box<Expr>),
+	Literal(Literal),
+	Unary(Operator, Box<Expr>),
 }
 impl Expr {
 	pub fn dump(&self) {
