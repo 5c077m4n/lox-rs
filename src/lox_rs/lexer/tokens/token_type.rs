@@ -54,6 +54,10 @@ pub enum Operator {
 	Mul,
 	/// /
 	Div,
+	/// &&
+	And,
+	/// ||
+	Or,
 }
 impl Operator {
 	pub fn to_str(&self) -> &str {
@@ -70,14 +74,14 @@ impl Operator {
 			Self::Sub => "-",
 			Self::Mul => "*",
 			Self::Div => "/",
+			Operator::And => "&&",
+			Operator::Or => "||",
 		}
 	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Keyword {
-	And,
-	Or,
 	Class,
 	If,
 	Else,
