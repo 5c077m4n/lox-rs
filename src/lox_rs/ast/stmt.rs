@@ -11,6 +11,7 @@ pub enum Stmt {
 	Print(Expr),
 	Var(String, Option<Expr>),
 	Block(Vec<Stmt>),
+	If(Expr, Box<Stmt>, Option<Box<Stmt>>),
 }
 impl Stmt {
 	pub fn interpret(self) -> Result<Literal> {

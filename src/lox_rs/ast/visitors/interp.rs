@@ -99,13 +99,7 @@ impl Interperter {
 								}
 							}
 						}
-						Literal::Boolean(b) => {
-							if b {
-								Literal::Number(1.)
-							} else {
-								Literal::Number(0.)
-							}
-						}
+						Literal::Boolean(b) => Literal::Number(if b { 1. } else { 0. }),
 						Literal::Null => Literal::Number(0.),
 					},
 					Operator::Sub => match right {
@@ -120,37 +114,13 @@ impl Interperter {
 								}
 							}
 						}
-						Literal::Boolean(b) => {
-							if b {
-								Literal::Number(-1.)
-							} else {
-								Literal::Number(0.)
-							}
-						}
+						Literal::Boolean(b) => Literal::Number(if b { -1. } else { 0. }),
 						Literal::Null => Literal::Number(0.),
 					},
 					Operator::Not => match right {
-						Literal::Number(n) => {
-							if n == 0. {
-								Literal::Boolean(true)
-							} else {
-								Literal::Boolean(false)
-							}
-						}
-						Literal::String(s) => {
-							if s.is_empty() {
-								Literal::Boolean(true)
-							} else {
-								Literal::Boolean(false)
-							}
-						}
-						Literal::Boolean(b) => {
-							if b {
-								Literal::Boolean(false)
-							} else {
-								Literal::Boolean(true)
-							}
-						}
+						Literal::Number(n) => Literal::Boolean(n != 0.),
+						Literal::String(s) => Literal::Boolean(!s.is_empty()),
+						Literal::Boolean(b) => Literal::Boolean(!b),
 						Literal::Null => Literal::Boolean(true),
 					},
 					other => bail!("Should not get {:?} as an unary operator", &other),
@@ -197,6 +167,14 @@ impl Interperter {
 				}
 				self.env = *self.env.get_parent().unwrap();
 
+				Ok(Literal::Null)
+			}
+			Stmt::If(cond, then_block, else_block) => {
+				if self.expr(cond)?.is_truthy() {
+					self.stmt(*then_block)?;
+				} else if let Some(else_block) = else_block {
+					self.stmt(*else_block)?;
+				}
 				Ok(Literal::Null)
 			}
 		}

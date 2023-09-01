@@ -15,12 +15,13 @@
 
 ## Statements
 
-| name        | value                                    |
-| ----------- | ---------------------------------------- |
-| program     | ( statement )\* EOF                      |
-| declaration | varDecl \| statement                     |
-| statement   | exprStmt \| printStmt                    |
-| block       | `{` ( declaration )\* `}`                |
-| exprStmt    | expression `;`                           |
-| printStmt   | `print` expression `;`                   |
-| varDecl     | `var` IDENTIFIER ( `=` expression )? `;` |
+| name        | value                                                   |
+| ----------- | ------------------------------------------------------- |
+| program     | ( statement )\* EOF                                     |
+| declaration | varDecl \| statement                                    |
+| statement   | exprStmt \| printStmt \| ifStmt \| block                |
+| block       | `{` ( declaration )\* `}`                               |
+| exprStmt    | expression `;`                                          |
+| printStmt   | `print` expression `;`                                  |
+| varDecl     | `var` IDENTIFIER ( `=` expression )? `;`                |
+| ifStmt      | `if` `(` expression `)` statement ( `else` statement )? |
