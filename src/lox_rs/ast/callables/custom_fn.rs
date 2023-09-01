@@ -53,8 +53,11 @@ impl Callable for CustomFn {
 
 		for (index, input) in inputs.iter().enumerate() {
 			let Expr::Variable(input_name) = input else {
-				bail!("Unexpected expression {:?} (should of been a variable)", &input);
- 			};
+				bail!(
+					"Unexpected expression {:?} (should of been a variable)",
+					&input
+				);
+			};
 			let input_name = input_name.to_string();
 			let input = args
 				.get(index)
