@@ -1,6 +1,6 @@
 use std::iter::{self, Peekable};
 
-use log::{debug, error};
+use log::error;
 
 use super::{
 	detector::detect,
@@ -16,10 +16,9 @@ pub fn scan(mut input: &[u8]) -> Box<Peekable<impl Iterator<Item = Token<'_>>>> 
 			move || match detect(input) {
 				Ok((tail, token_type)) => {
 					input = tail;
-					debug!("{:#?}", &token_type);
 
 					if token_type != TokenType::EndOfFile {
-						Some(Token::new(token_type, "", 0, 0))
+						Some(Token::new(token_type, 0, 0))
 					} else {
 						None
 					}
